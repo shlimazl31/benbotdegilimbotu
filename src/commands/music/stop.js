@@ -5,7 +5,7 @@ import { useQueue } from 'discord-player';
 export const command = {
     data: new SlashCommandBuilder()
         .setName('stop')
-        .setDescription('Müziği durdurur ve sırayı temizler'),
+        .setDescription('Müziği durdurur'),
 
     async execute(interaction) {
         try {
@@ -13,19 +13,16 @@ export const command = {
                 return await interaction.reply('Önce bir ses kanalına katılmalısın!');
             }
 
-            const player = await getPlayer(interaction.client);
             const queue = useQueue(interaction.guildId);
-
             if (!queue || !queue.isPlaying()) {
                 return await interaction.reply('Şu anda müzik çalmıyor!');
             }
 
             queue.delete();
-            
-            return await interaction.reply('⏹️ Müzik durduruldu ve sıra temizlendi!');
+            return await interaction.reply('⏹️ Müzik durduruldu!');
         } catch (error) {
-            console.error('Stop komutu hatası:', error);
-            return await interaction.reply('Müzik durdurulurken bir hata oluştu!');
+            console.error(error);
+            return await interaction.reply('Bir hata oluştu!');
         }
     }
 };

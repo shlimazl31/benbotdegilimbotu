@@ -1,6 +1,5 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { getPlayer } from '../../utils/player.js';
-import { QueryType } from 'discord-player';
 
 export const command = {
     data: new SlashCommandBuilder()
@@ -22,41 +21,29 @@ export const command = {
             const player = await getPlayer(interaction.client);
             const query = interaction.options.getString('şarkı');
 
-            const result = await player.search(query, {
-                requestedBy: interaction.user,
-                searchEngine: QueryType.AUTO
+            const searchResult = await player.search(query, {
+                requestedBy: interaction.user
             });
 
-            if (!result.hasTracks()) {
+            if (!searchResult.hasTracks()) {
                 return await interaction.followUp('Şarkı bulunamadı!');
             }
 
             try {
-                const res = await player.play(
-                    interaction.member.voice.channel,
-                    result.tracks[0],
-                    {
-                        nodeOptions: {
-                            metadata: {
-                                channel: interaction.channel,
-                                client: interaction.guild.members.me,
-                                requestedBy: interaction.user
-                            },
-                            volume: 80,
-                            leaveOnEmpty: true,
-                            leaveOnEmptyCooldown: 300000,
-                            leaveOnEnd: true,
-                            leaveOnEndCooldown: 300000,
-                        }
+                await player.play(interaction.member.voice.channel, searchResult.tracks[0], {
+                    nodeOptions: {
+                        metadata: interaction,
+                        volume: 80,
+                        leaveOnEmpty: true,
+                        leaveOnEnd: true
                     }
-                );
+                });
 
-                return await interaction.followUp(`🎵 **${result.tracks[0].title}** sıraya eklendi!`);
+                return await interaction.followUp(`🎵 Çalınıyor: **${searchResult.tracks[0].title}**`);
             } catch (error) {
                 console.error('Çalma hatası:', error);
                 return await interaction.followUp('Şarkı çalınırken bir hata oluştu!');
             }
-
         } catch (error) {
             console.error('Genel hata:', error);
             return await interaction.followUp('Bir hata oluştu!');
