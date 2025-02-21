@@ -10,18 +10,24 @@ Modern ve kullanıcı dostu bir Discord müzik botu. YouTube ve Spotify desteği
 - `/resume` - Duraklatılmış şarkıyı devam ettirir
 - `/stop` - Müziği durdurur
 - `/skip` - Sıradaki şarkıya geçer
+- `/previous` - Önceki şarkıya döner
 - `/leave` - Bot ses kanalından ayrılır
+- `/lyrics` - Şarkı sözlerini gösterir
+- `/search` - YouTube'da şarkı arar
 
 ### 📑 Sıra Yönetimi
 - `/queue` - Şarkı sırasını gösterir
 - `/clear` - Sırayı temizler
 - `/shuffle` - Sırayı karıştırır
 - `/loop` - Tekrar modunu ayarlar (şarkı/sıra/kapalı)
+- `/move` - Sıradaki şarkıyı taşır
 
 ### ⚙️ Gelişmiş Kontroller
 - `/volume` - Ses seviyesini ayarlar (1-100)
 - `/seek` - Şarkının belirli bir saniyesine atlar
 - `/nowplaying` - Çalan şarkının detaylı bilgilerini gösterir
+- `/247` - 24/7 modunu açar/kapatır
+- `/autoplay` - Otomatik oynatma modunu açar/kapatır
 
 ### 📋 Playlist Özellikleri
 - `/playlist play` - YouTube veya Spotify playlistlerini çalar
@@ -32,67 +38,33 @@ Modern ve kullanıcı dostu bir Discord müzik botu. YouTube ve Spotify desteği
 
 ### 🔍 Genel
 - `/help` - Tüm komutları ve açıklamalarını gösterir
+- `/ping` - Bot gecikmesini gösterir
+- `/stats` - Bot istatistiklerini gösterir
+
+## 🌐 Web Panel (Yapım Aşamasında)
+
+- Vite + React altyapısı
+- TailwindCSS ile modern tasarım
+- Discord OAuth2 entegrasyonu
+- Sunucu yönetimi
+- Bot istatistikleri
 
 ## 🛠️ Teknik Özellikler
 
 - Discord.js v14
-- Discord Player kütüphanesi
+- Discord Player v6
 - YouTube ve Spotify desteği
 - ESM modül sistemi
 - Hata yönetimi ve loglama
 - Kategorize edilmiş komut yapısı
 
-## 📦 Kurulum
+## 👥 İletişim
 
-1. Repoyu klonlayın:
-
-bash
-
-git clone https://github.com/shlimazl31/benbotdegilimbotu.git
-
-cd benbotdegilimbotu
-
-bash
-
-npm install
-
-env
-
-TOKEN=discord_bot_token
-
-CLIENT_ID=bot_client_id
-
-bash
-
-npm start
-
-src/
-├── commands/
-│ ├── general/
-│ │ └── help.js
-│ ├── moderation/
-│ │ └── purge.js
-│ └── music/
-│ ├── play.js
-│ ├── pause.js
-│ └── ...
-├── events/
-│ ├── ready.js
-│ └── interactionCreate.js
-└── utils/
-└── player.js
-
-
-## 🤝 Katkıda Bulunma
-
-1. Bu repoyu forklayın
-2. Yeni bir branch oluşturun (`git checkout -b feature/yeniOzellik`)
-3. Değişikliklerinizi commit edin (`git commit -am 'Yeni özellik: XYZ'`)
-4. Branch'inizi push edin (`git push origin feature/yeniOzellik`)
-5. Pull Request oluşturun
+GitHub: [@shlimazl31](https://github.com/shlimazl31)
+Discord: [Bana ulaşın](https://benbotdegilim.com)
 
 ## 📝 Lisans
 
 Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICENSE) dosyasına bakın.
 
-## 🙏 Teşekkürler
+## 🙏
