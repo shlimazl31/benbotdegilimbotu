@@ -16,24 +16,31 @@ export const getPlayer = async (client) => {
             quality: 'highestaudio',
             highWaterMark: 1 << 25
         },
-        connectionTimeout: 999_999
+        connectionTimeout: 999_999,
+        smoothVolume: true,
+        debug: true // Hata ayıklama için logları açalım
     });
 
     // Extractors'ı yükle
     await player.extractors.loadMulti(DefaultExtractors);
 
     // Player event'lerini dinle
+    player.events.on('debug', (message) => {
+        console.log(`Player Debug: ${message}`);
+    });
+
     player.events.on('error', (queue, error) => {
-        console.error(`Player hatası: ${error.message}`);
+        console.error(`Player Error: ${error.message}`);
         console.error(error);
     });
 
     player.events.on('playerError', (queue, error) => {
-        console.error(`Oynatıcı hatası: ${error.message}`);
+        console.error(`Player Error: ${error.message}`);
         console.error(error);
     });
 
     player.events.on('playerStart', (queue, track) => {
+        console.log(`Playing: ${track.title}`);
         queue.metadata.channel.send(`🎵 Şimdi çalıyor: **${track.title}**`);
     });
 

@@ -1,12 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { getPlayer } from '../../utils/player.js';
-import { webcrypto } from 'node:crypto';
 import { QueryType } from 'discord-player';
-
-// Node 18+ için crypto polyfill
-if (!globalThis.crypto) {
-    globalThis.crypto = webcrypto;
-}
 
 export const command = {
     data: new SlashCommandBuilder()
@@ -41,7 +35,7 @@ export const command = {
                 let queue = player.nodes.get(interaction.guildId);
                 
                 // Queue yoksa yeni oluştur
-                if (!queue) {
+                if (!queue || !queue.connection) {
                     queue = player.nodes.create(interaction.guild, {
                         metadata: {
                             channel: interaction.channel,
@@ -56,14 +50,15 @@ export const command = {
                         bufferingTimeout: 15000,
                         connectionTimeout: 999_999
                     });
+
+                    // Ses kanalına bağlan
+                    if (!queue.connection) {
+                        await queue.connect(voiceChannel);
+                        await new Promise(resolve => setTimeout(resolve, 1000)); // Bağlantı için bekle
+                    }
                 }
 
-                // Ses kanalına bağlan
-                if (!queue.connection) {
-                    await queue.connect(voiceChannel);
-                }
-
-                // Şarkıyı ara ve çal
+                console.log('Şarkı aranıyor:', query);
                 const result = await player.search(query, {
                     requestedBy: interaction.user,
                     searchEngine: QueryType.AUTO
@@ -73,23 +68,25 @@ export const command = {
                     return await interaction.followUp('Şarkı bulunamadı!');
                 }
 
-                // Şarkıyı çal
-                await queue.node.play(result.tracks[0]);
+                console.log('Şarkı bulundu:', result.tracks[0].title);
+                const track = result.tracks[0];
 
-                return await interaction.followUp(`🎵 Sıraya eklendi: **${result.tracks[0].title}**`);
-            } catch (error) {
-                console.error('Çalma hatası:', error);
-                
-                // Hata durumunda queue'yu temizle
-                if (player.nodes.get(interaction.guildId)) {
-                    player.nodes.delete(interaction.guildId);
+                // Şarkıyı çal
+                try {
+                    await queue.node.play(track);
+                    console.log('Şarkı çalmaya başladı');
+                    return await interaction.followUp(`🎵 Sıraya eklendi: **${track.title}**`);
+                } catch (playError) {
+                    console.error('Şarkı çalma hatası:', playError);
+                    return await interaction.followUp(`Şarkı çalınırken hata oluştu: ${playError.message}`);
                 }
-                
-                return await interaction.followUp('Şarkı çalınırken bir hata oluştu! Hata: ' + error.message);
+            } catch (error) {
+                console.error('Queue hatası:', error);
+                return await interaction.followUp(`Bir hata oluştu: ${error.message}`);
             }
         } catch (error) {
             console.error('Genel hata:', error);
-            return await interaction.followUp('Bir hata oluştu! Hata: ' + error.message);
+            return await interaction.followUp('Bir hata oluştu!');
         }
     }
 };
