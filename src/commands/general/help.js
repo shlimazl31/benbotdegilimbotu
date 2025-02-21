@@ -31,7 +31,7 @@ export const command = {
                 {
                     name: '⚙️ Kontrol Komutları',
                     value: 
-                    '`/volume` - Ses seviyesini ayarlar\n' +
+                    '`/volume` - Ses seviyesini ayarlar (1-100)\n' +
                     '`/seek` - Şarkının belirli bir saniyesine atlar\n' +
                     '`/nowplaying` - Çalan şarkının bilgilerini gösterir'
                 },
@@ -40,6 +40,11 @@ export const command = {
                     value:
                     '`/playlist play` - Playlist çalar\n' +
                     '`/playlist info` - Playlist bilgilerini gösterir'
+                },
+                {
+                    name: '🛠️ Yönetici Komutları',
+                    value:
+                    '`/purge` - Belirtilen sayıda mesajı siler (1-100)'
                 }
             )
             .setColor('#FF0000')
