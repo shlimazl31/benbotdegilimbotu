@@ -1,6 +1,5 @@
 import { Player } from 'discord-player';
-import pkg from '@discord-player/extractor';
-const { DefaultExtractors } = pkg;
+import { YouTubeExtractor } from '@discord-player/extractor';
 
 let player = null;
 
@@ -15,7 +14,9 @@ export const getPlayer = async (client) => {
         }
     });
 
-    // Extractors yerine events kullan
+    // YouTube extractor'ı ekle
+    await player.extractors.register(YouTubeExtractor);
+
     player.events.on('playerStart', (queue, track) => {
         queue.metadata.channel.send(`🎵 Şimdi çalıyor: **${track.title}**\n🔗 ${track.url}`);
     });
@@ -35,9 +36,6 @@ export const getPlayer = async (client) => {
     player.events.on('emptyQueue', (queue) => {
         queue.metadata.channel.send('✅ Sıra bitti!');
     });
-
-    // Discord Player'ı hazırla
-    await player.extractors.register(DefaultExtractors);
 
     return player;
 };
