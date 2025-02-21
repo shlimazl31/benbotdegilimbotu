@@ -42,7 +42,7 @@ export const command = {
                     '`/playlist info` - Playlist bilgilerini gösterir'
                 },
                 {
-                    name: '🛠️ Yönetici Komutları',
+                    name: '👮 Moderasyon Komutları',
                     value:
                     '`/purge` - Belirtilen sayıda mesajı siler (1-100)'
                 }
