@@ -14,34 +14,47 @@ const commands = [];
 const foldersPath = join(__dirname, 'commands');
 const commandFolders = readdirSync(foldersPath);
 
+console.log('Komut klasörleri:', commandFolders);
+
 for (const folder of commandFolders) {
     const commandsPath = join(foldersPath, folder);
     const commandFiles = readdirSync(commandsPath).filter(file => file.endsWith('.js'));
     
+    console.log(`📂 ${folder} klasöründeki komutlar:`, commandFiles);
+    
     for (const file of commandFiles) {
         const filePath = `file://${join(commandsPath, file).replace(/\\/g, '/')}`;
-        const command = await import(filePath);
+        console.log(`⚙️ Yükleniyor: ${filePath}`);
         
-        if ('command' in command && 'data' in command.command) {
-            commands.push(command.command.data.toJSON());
-            console.log(`✅ Komut yüklendi: ${command.command.data.name}`);
-        } else {
-            console.log(`❌ ${file} komutunda gerekli özellikler eksik`);
+        try {
+            const command = await import(filePath);
+            
+            if ('command' in command && 'data' in command.command) {
+                commands.push(command.command.data.toJSON());
+                console.log(`✅ Komut yüklendi: ${command.command.data.name}`);
+            } else {
+                console.log(`❌ ${file} komutunda gerekli özellikler eksik`);
+            }
+        } catch (error) {
+            console.error(`❌ ${file} yüklenirken hata:`, error);
         }
     }
 }
+
+console.log('Yüklenecek komutlar:', commands.map(cmd => cmd.name));
 
 const rest = new REST().setToken(process.env.TOKEN);
 
 try {
     console.log('Slash komutları yükleniyor...');
 
-    await rest.put(
+    const result = await rest.put(
         Routes.applicationCommands(process.env.CLIENT_ID),
         { body: commands },
     );
 
+    console.log('API Yanıtı:', result);
     console.log('Slash komutları başarıyla yüklendi!');
 } catch (error) {
-    console.error(error);
+    console.error('Komut yükleme hatası:', error);
 } 

@@ -24,7 +24,8 @@ export const getPlayer = async (client) => {
         }
     });
 
-    player.events.on('playerStart', (queue, track) => {
+    // Çift event tetiklenmesini önlemek için once kullanıyoruz
+    player.events.once('playerStart', (queue, track) => {
         queue.metadata.send(`🎵 Şimdi çalıyor: **${track.title}**!`);
     });
 
