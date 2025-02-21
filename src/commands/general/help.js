@@ -22,7 +22,8 @@ export const command = {
                         '`/stop` - Müziği durdurur\n' +
                         '`/skip` - Şarkıyı atlar\n' +
                         '`/previous` - Önceki şarkıya döner\n' +
-                        '`/leave` - Kanaldan çıkar'
+                        '`/leave` - Kanaldan çıkar\n' +
+                        '`/247` - 24/7 modu açar/kapatır'
                     },
                     {
                         name: '📑 Sıra Komutları',
