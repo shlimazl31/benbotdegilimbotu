@@ -4,9 +4,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js",
-    "postinstall": "node node_modules/@discordjs/opus/scripts/install.js"
+    "start": "node index.js"
   },
   "repository": {
     "type": "git",
@@ -28,10 +26,9 @@
     "discord.js": "^14.18.0",
     "dotenv": "^16.4.7",
     "ffmpeg-static": "^5.2.0",
-    "play-dl": "^1.9.7",
-    "mediaplex": "^1.0.0"
+    "play-dl": "^1.9.7"
   },
   "engines": {
-    "node": ">=16.x"
+    "node": "18.x"
   }
 }
