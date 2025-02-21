@@ -5,11 +5,12 @@ export const event = {
         console.log(`Bot olarak giriş yapıldı: ${client.user.tag}`);
         
         try {
-            const commands = client.commands.map(command => command.data);
-            await client.application.commands.set(commands);
-            console.log('Slash komutları başarıyla kaydedildi!');
+            console.log('Komutlar yükleniyor...');
+            await client.application.commands.set(client.commands.map(cmd => cmd.data));
+            console.log('Komutlar başarıyla yüklendi!');
+            console.log(`${client.user.tag} hazır!`);
         } catch (error) {
-            console.error('Slash komutları kaydedilirken hata oluştu:', error);
+            console.error('Komutlar yüklenirken hata:', error);
         }
     }
 };
