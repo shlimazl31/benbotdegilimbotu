@@ -20,7 +20,7 @@ export const getPlayer = async (client) => {
     });
 
     // Extractors'ı yükle
-    await player.extractors.loadDefault();
+    await player.extractors.loadMulti(DefaultExtractors);
 
     // Player event'lerini dinle
     player.events.on('error', (queue, error) => {
