@@ -29,7 +29,9 @@
     "play-dl": "^1.9.7",
     "sodium-native": "^4.0.4",
     "opusscript": "^0.0.8",
-    "libsodium-wrappers": "^0.7.13"
+    "libsodium-wrappers": "^0.7.13",
+    "ytdl-core": "^4.11.5",
+    "@discordjs/builders": "^1.7.0"
   },
   "engines": {
     "node": ">=18.x"

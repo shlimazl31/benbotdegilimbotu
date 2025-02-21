@@ -15,9 +15,7 @@ export const getPlayer = async (client) => {
         }
     });
 
-    // Extractors'ı yükle
-    await player.extractors.loadMulti(DefaultExtractors);
-
+    // Extractors yerine events kullan
     player.events.on('playerStart', (queue, track) => {
         queue.metadata.channel.send(`🎵 Şimdi çalıyor: **${track.title}**\n🔗 ${track.url}`);
     });
@@ -37,6 +35,9 @@ export const getPlayer = async (client) => {
     player.events.on('emptyQueue', (queue) => {
         queue.metadata.channel.send('✅ Sıra bitti!');
     });
+
+    // Discord Player'ı hazırla
+    await player.extractors.register(DefaultExtractors);
 
     return player;
 };
