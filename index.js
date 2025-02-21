@@ -6,6 +6,8 @@ import { join } from 'path';
 import { config } from 'dotenv';
 import { REST, Routes } from 'discord.js';
 import { webcrypto } from 'node:crypto';
+import { Player } from 'discord-player';
+import { DefaultExtractors } from '@discord-player/extractor';
 
 // crypto için global polyfill
 if (!globalThis.crypto) {
@@ -27,6 +29,22 @@ const client = new Client({
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildVoiceStates
     ]
+});
+
+// Global player instance'ı oluştur
+const player = new Player(client);
+
+// Player'ı başlat
+await player.extractors.loadMulti(DefaultExtractors);
+
+// Player eventlerini ayarla
+player.events.on('playerStart', (queue, track) => {
+    queue.metadata.send(`🎵 Şimdi çalıyor: **${track.title}**!`);
+});
+
+player.events.on('error', (queue, error) => {
+    console.error('Player hatası:', error);
+    queue.metadata.send('❌ Bir hata oluştu!');
 });
 
 // Process handlers

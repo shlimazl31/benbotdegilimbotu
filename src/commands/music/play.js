@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { useMainPlayer, QueryType } from 'discord-player';
+import { getPlayer } from '../../utils/player.js';
 
 export const command = {
     data: new SlashCommandBuilder()
@@ -17,7 +17,7 @@ export const command = {
 
             await interaction.deferReply();
 
-            const player = useMainPlayer();
+            const player = await getPlayer(interaction.client);
             const query = interaction.options.getString('şarkı', true);
 
             try {
