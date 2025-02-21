@@ -1,5 +1,6 @@
 import { Player } from 'discord-player';
-import { DefaultExtractors } from '@discord-player/extractor';
+import pkg from '@discord-player/extractor';
+const { DefaultExtractors } = pkg;
 
 let player = null;
 
