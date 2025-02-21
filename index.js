@@ -69,15 +69,23 @@ try {
         for (const file of commandFiles) {
             try {
                 const filePath = `file://${join(commandsPath, file).replace(/\\/g, '/')}`;
-                console.log(`⚙️ Yükleniyor: ${file}`);
+                console.log(`⚙️ Yüklemeye çalışılıyor: ${filePath}`);
                 
-                const command = await import(filePath);
+                const commandModule = await import(filePath);
+                console.log('Yüklenen modül:', commandModule);
                 
-                if ('command' in command && command.command.data) {
-                    client.commands.set(command.command.data.name, command.command);
-                    console.log(`✅ Komut yüklendi: ${command.command.data.name}`);
+                if ('command' in commandModule) {
+                    console.log('Command bulundu:', commandModule.command);
+                    if (commandModule.command.data) {
+                        console.log('Command data bulundu:', commandModule.command.data);
+                        client.commands.set(commandModule.command.data.name, commandModule.command);
+                        console.log(`✅ Komut başarıyla yüklendi: ${commandModule.command.data.name}`);
+                    } else {
+                        console.log(`⚠️ [UYARI] ${file} komutunda data özelliği yok`);
+                    }
                 } else {
-                    console.log(`⚠️ [UYARI] ${file} komut yapısı hatalı:`, command);
+                    console.log(`⚠️ [UYARI] ${file} dosyasında command export edilmemiş`);
+                    console.log('Modül içeriği:', commandModule);
                 }
             } catch (error) {
                 console.error(`❌ ${file} komut dosyası yüklenirken hata:`, error);
