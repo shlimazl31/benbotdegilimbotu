@@ -58,11 +58,13 @@ try {
     const foldersPath = join(__dirname, 'src', 'commands');
     const commandFolders = readdirSync(foldersPath);
 
+    console.log('Komut klasörleri:', commandFolders);
+
     for (const folder of commandFolders) {
         const commandsPath = join(foldersPath, folder);
         const commandFiles = readdirSync(commandsPath).filter(file => file.endsWith('.js'));
         
-        console.log(`📂 ${folder} klasöründeki komutlar yükleniyor...`);
+        console.log(`📂 ${folder} klasöründeki komutlar:`, commandFiles);
         
         for (const file of commandFiles) {
             try {
@@ -71,17 +73,19 @@ try {
                 
                 const command = await import(filePath);
                 
-                if ('command' in command) {
+                if ('command' in command && command.command.data) {
                     client.commands.set(command.command.data.name, command.command);
                     console.log(`✅ Komut yüklendi: ${command.command.data.name}`);
                 } else {
-                    console.log(`⚠️ [UYARI] ${file} komut dosyasında gerekli özellikler eksik`);
+                    console.log(`⚠️ [UYARI] ${file} komut yapısı hatalı:`, command);
                 }
-            } catch (commandError) {
-                console.error(`❌ ${file} komut dosyası yüklenirken hata oluştu:`, commandError);
+            } catch (error) {
+                console.error(`❌ ${file} komut dosyası yüklenirken hata:`, error);
             }
         }
     }
+
+    console.log('Yüklenen komutlar:', Array.from(client.commands.keys()));
 
     // Event'leri yükle
     const eventsPath = join(__dirname, 'src', 'events');
