@@ -11,7 +11,7 @@ export const command = {
             const player = await getPlayer(interaction.client);
             const queue = player.nodes.get(interaction.guildId);
 
-            if (!queue || !queue.isPlaying()) {
+            if (!queue) {
                 return await interaction.reply({
                     content: '❌ Şu anda çalan bir şarkı yok!',
                     ephemeral: true

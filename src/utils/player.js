@@ -24,11 +24,8 @@ export const getPlayer = async (client) => {
         }
     });
 
-    // Çift event tetiklenmesini önlemek için once kullanıyoruz
-    player.events.once('playerStart', (queue, track) => {
-        queue.metadata.send(`🎵 Şimdi çalıyor: **${track.title}**!`);
-    });
-
+    // playerStart eventini kaldırdık
+    
     player.events.on('error', (queue, error) => {
         console.error('Player hatası:', error);
         queue.metadata?.send('❌ Bir hata oluştu!');

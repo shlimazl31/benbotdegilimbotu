@@ -74,6 +74,7 @@ process.on('uncaughtException', (error) => {
 
 // Komutları yükle
 try {
+    const commands = [];  // Bu array'i en başta oluştur
     const foldersPath = join(__dirname, 'src', 'commands');
     const commandFolders = readdirSync(foldersPath);
 
@@ -91,7 +92,6 @@ try {
             
             try {
                 const commandModule = await import(filePath);
-                console.log(`📦 Modül içeriği (${file}):`, commandModule);
                 
                 if (!commandModule.command) {
                     console.error(`❌ ${file} dosyasında 'command' export bulunamadı`);
@@ -104,14 +104,26 @@ try {
                 }
 
                 const commandName = commandModule.command.data.name;
-                console.log(`✨ Komut adı: ${commandName}`);
-                
                 client.commands.set(commandName, commandModule.command);
+                commands.push(commandModule.command.data.toJSON());  // Discord'a kaydetmek için commands array'ine ekle
                 console.log(`✅ Komut başarıyla yüklendi: ${commandName}`);
             } catch (error) {
                 console.error(`❌ ${file} komut dosyası yüklenirken hata:`, error);
             }
         }
+    }
+
+    // Komutları Discord'a kaydet
+    const rest = new REST().setToken(process.env.TOKEN);
+    try {
+        console.log('Slash komutları Discord\'a yükleniyor...');
+        await rest.put(
+            Routes.applicationCommands(process.env.CLIENT_ID),
+            { body: commands }
+        );
+        console.log('✅ Slash komutları başarıyla Discord\'a yüklendi!');
+    } catch (error) {
+        console.error('Discord\'a komut yükleme hatası:', error);
     }
 
     const loadedCommands = Array.from(client.commands.keys());

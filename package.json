@@ -24,13 +24,13 @@
     "discord-player": "^6.6.7",
     "@discord-player/extractor": "^4.4.5",
     "discord.js": "^14.14.1",
-    "dotenv": "^16.4.7",
+    "dotenv": "^16.4.5",
     "ffmpeg-static": "^5.2.0",
     "play-dl": "^1.9.7",
+    "discord-player-youtubei": "^1.2.1",
     "sodium-native": "^4.0.4",
     "opusscript": "^0.0.8",
-    "libsodium-wrappers": "^0.7.13",
-    "discord-player-youtubei": "^1.2.1"
+    "libsodium-wrappers": "^0.7.13"
   },
   "engines": {
     "node": ">=18.x"
