@@ -74,7 +74,7 @@ process.on('uncaughtException', (error) => {
 
 // Komutları yükle
 try {
-    const commands = [];  // Bu array'i en başta oluştur
+    const commands = new Map();  // Tekrar eden komutları kontrol etmek için Map kullanıyoruz
     const foldersPath = join(__dirname, 'src', 'commands');
     const commandFolders = readdirSync(foldersPath);
 
@@ -104,8 +104,17 @@ try {
                 }
 
                 const commandName = commandModule.command.data.name;
+
+                // Tekrar eden komut kontrolü
+                if (commands.has(commandName)) {
+                    console.error(`❌ HATA: '${commandName}' komutu birden fazla kez tanımlanmış!`);
+                    console.error(`   İlk tanım: ${commands.get(commandName)}`);
+                    console.error(`   İkinci tanım: ${filePath}`);
+                    continue;
+                }
+
+                commands.set(commandName, filePath);
                 client.commands.set(commandName, commandModule.command);
-                commands.push(commandModule.command.data.toJSON());  // Discord'a kaydetmek için commands array'ine ekle
                 console.log(`✅ Komut başarıyla yüklendi: ${commandName}`);
             } catch (error) {
                 console.error(`❌ ${file} komut dosyası yüklenirken hata:`, error);
@@ -117,9 +126,13 @@ try {
     const rest = new REST().setToken(process.env.TOKEN);
     try {
         console.log('Slash komutları Discord\'a yükleniyor...');
+        
+        // Map'ten Array'e çevir ve sadece komut verilerini al
+        const commandsArray = Array.from(client.commands.values()).map(cmd => cmd.data.toJSON());
+        
         await rest.put(
             Routes.applicationCommands(process.env.CLIENT_ID),
-            { body: commands }
+            { body: commandsArray }
         );
         console.log('✅ Slash komutları başarıyla Discord\'a yüklendi!');
     } catch (error) {
