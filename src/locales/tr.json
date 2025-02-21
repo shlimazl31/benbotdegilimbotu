@@ -1,0 +1,45 @@
+{
+    "music": {
+        "play": {
+            "description": "Şarkı çalar",
+            "optionDescription": "Şarkı adı veya URL",
+            "noVoiceChannel": "❌ Önce bir ses kanalına katılmalısın!",
+            "addedToQueue": "🎵 **{title}** sıraya eklendi!",
+            "nowPlaying": "▶️ Şimdi çalıyor: **{title}**",
+            "error": "❌ Bir hata oluştu!"
+        },
+        "pause": {
+            "description": "Şarkıyı duraklatır",
+            "noTrackPlaying": "❌ Şu anda çalan bir şarkı yok!",
+            "paused": "⏸️ Şarkı duraklatıldı!",
+            "error": "❌ Bir hata oluştu!"
+        },
+        "resume": {
+            "description": "Duraklatılmış şarkıyı devam ettirir",
+            "noTrackPlaying": "❌ Şu anda çalan bir şarkı yok!",
+            "resumed": "▶️ Şarkı devam ediyor!",
+            "error": "❌ Bir hata oluştu!"
+        }
+    },
+    "general": {
+        "help": {
+            "title": "🤖 Bot Komutları",
+            "description": "Kullanılabilir tüm komutlar:",
+            "musicCommands": "🎵 Müzik Komutları",
+            "queueCommands": "📑 Sıra Komutları",
+            "controlCommands": "⚙️ Kontrol Komutları",
+            "moderationCommands": "👮 Moderasyon Komutları"
+        }
+    },
+
+    "help": {
+    "title": "🤖 Bot Komutları",
+    "description": "Kullanılabilir tüm komutlar:",
+    "musicCommands": "🎵 Müzik Komutları",
+    "queueCommands": "📑 Sıra Komutları",
+    "controlCommands": "⚙️ Kontrol Komutları",
+    "playlistCommands": "📋 Playlist Komutları",
+    "generalCommands": "🔧 Genel Komutlar",
+    "footer": "Daha fazla özellik yakında!"
+}
+}
