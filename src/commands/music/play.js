@@ -18,8 +18,16 @@ export const command = {
 
     async execute(interaction) {
         try {
-            if (!interaction.member.voice.channel) {
+            const voiceChannel = interaction.member.voice.channel;
+            
+            if (!voiceChannel) {
                 return await interaction.reply('Önce bir ses kanalına katılmalısın!');
+            }
+
+            // Bot'un ses kanalına katılma iznini kontrol et
+            const permissions = voiceChannel.permissionsFor(interaction.client.user);
+            if (!permissions.has('Connect') || !permissions.has('Speak')) {
+                return await interaction.reply('Ses kanalına katılmak ve konuşmak için iznim yok!');
             }
 
             await interaction.deferReply();
@@ -36,18 +44,34 @@ export const command = {
             }
 
             try {
-                await player.play(interaction.member.voice.channel, searchResult.tracks[0], {
-                    nodeOptions: {
-                        metadata: interaction,
-                        volume: 80,
-                        leaveOnEmpty: true,
-                        leaveOnEnd: true
-                    }
+                const queue = player.nodes.create(interaction.guild, {
+                    metadata: {
+                        channel: interaction.channel,
+                        client: interaction.guild.members.me,
+                        requestedBy: interaction.user,
+                    },
+                    selfDeaf: true,
+                    volume: 80,
+                    leaveOnEmpty: false, // Kanal boş kalınca çıkmasın
+                    leaveOnEnd: false, // Şarkı bitince çıkmasın
+                    leaveOnStop: false, // Stop komutu verilince çıkmasın
                 });
 
+                // Ses kanalına katıl
+                if (!queue.connection) {
+                    await queue.connect(voiceChannel);
+                }
+
+                // Şarkıyı sıraya ekle ve çal
+                await queue.play(searchResult.tracks[0]);
+                
                 return await interaction.followUp(`🎵 Çalınıyor: **${searchResult.tracks[0].title}**`);
             } catch (error) {
                 console.error('Çalma hatası:', error);
+                // Hata durumunda queue'yu temizle
+                if (player.nodes.get(interaction.guildId)) {
+                    player.nodes.delete(interaction.guildId);
+                }
                 return await interaction.followUp('Şarkı çalınırken bir hata oluştu!');
             }
         } catch (error) {
