@@ -1,5 +1,7 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { getPlayer } from '../../utils/player.js';
+import { QueryType } from 'discord-player';
+import play from 'play-dl';
 
 export const command = {
     data: new SlashCommandBuilder()
@@ -24,6 +26,13 @@ export const command = {
             const query = interaction.options.getString('şarkı');
 
             try {
+                // YouTube API'sini ayarla
+                await play.setToken({
+                    youtube: {
+                        cookie: process.env.YOUTUBE_COOKIE || ''
+                    }
+                });
+
                 const queue = player.nodes.create(interaction.guild, {
                     metadata: {
                         channel: interaction.channel,
@@ -46,19 +55,29 @@ export const command = {
                     return await interaction.followUp('Ses kanalına bağlanırken bir hata oluştu!');
                 }
 
-                const result = await player.search(query, {
-                    requestedBy: interaction.user
+                // Şarkı araması yap
+                const searchResult = await player.search(query, {
+                    requestedBy: interaction.user,
+                    searchEngine: QueryType.AUTO
                 });
 
-                if (!result.hasTracks()) {
-                    return await interaction.followUp('Şarkı bulunamadı!');
+                console.log('Arama sonucu:', searchResult);
+
+                if (!searchResult || !searchResult.tracks || searchResult.tracks.length === 0) {
+                    if (queue) queue.delete();
+                    return await interaction.followUp('Şarkı bulunamadı! Lütfen başka bir şarkı deneyin.');
                 }
 
                 try {
-                    await queue.node.play(result.tracks[0]);
-                    return await interaction.followUp(`🎵 Sıraya eklendi: **${result.tracks[0].title}**`);
+                    const track = searchResult.tracks[0];
+                    await queue.node.play(track);
+                    
+                    return await interaction.followUp({
+                        content: `🎵 Sıraya eklendi: **${track.title}**\n🔗 ${track.url}`
+                    });
                 } catch (error) {
                     console.error('Çalma hatası:', error);
+                    if (queue) queue.delete();
                     return await interaction.followUp('Şarkı çalınırken bir hata oluştu!');
                 }
             } catch (error) {
