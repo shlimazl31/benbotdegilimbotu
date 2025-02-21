@@ -3,7 +3,7 @@ import { getPlayer } from '../../utils/player.js';
 import { QueryType } from 'discord-player';
 import play from 'play-dl';
 
-const command = {
+export const command = {
     data: new SlashCommandBuilder()
         .setName('play')
         .setDescription('Müzik çalar')

@@ -5,7 +5,7 @@ import { useQueue } from 'discord-player';
 export const command = {
     data: new SlashCommandBuilder()
         .setName('stop')
-        .setDescription('Müziği durdurur'),
+        .setDescription('Müziği durdurur ve botu kanaldan çıkarır'),
 
     async execute(interaction) {
         try {
