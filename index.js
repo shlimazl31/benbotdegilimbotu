@@ -1,10 +1,13 @@
-import { Client, GatewayIntentBits, Collection, REST, Routes } from 'discord.js';
+import { Client, Collection, GatewayIntentBits } from 'discord.js';
 import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { dirname } from 'path';
 import { readdirSync } from 'fs';
-import dotenv from 'dotenv';
+import { join } from 'path';
+import { config } from 'dotenv';
+import { REST, Routes } from 'discord.js';
 
-dotenv.config();
+// .env dosyasını yükle
+config();
 
 // __dirname'i ESM için düzelt
 const __filename = fileURLToPath(import.meta.url);
@@ -62,20 +65,32 @@ try {
             const filePath = `file://${join(eventsPath, file).replace(/\\/g, '/')}`;
             const event = await import(filePath);
             
-            if (event.event.once) {
-                client.once(event.event.name, (...args) => event.event.execute(...args));
-                console.log(`✅ Event yüklendi (once): ${event.event.name}`);
-            } else {
-                client.on(event.event.name, (...args) => event.event.execute(...args));
-                console.log(`✅ Event yüklendi: ${event.event.name}`);
+            if ('event' in event) {
+                if (event.event.once) {
+                    client.once(event.event.name, (...args) => event.event.execute(...args));
+                } else {
+                    client.on(event.event.name, (...args) => event.event.execute(...args));
+                }
+                console.log(`✅ Event yüklendi${event.event.once ? ' (once)' : ''}: ${event.event.name}`);
             }
         } catch (eventError) {
             console.error(`❌ ${file} event dosyası yüklenirken hata oluştu:`, eventError);
         }
     }
-
 } catch (error) {
-    console.error('❌ Dosyalar yüklenirken hata oluştu:', error);
+    console.error('Genel bir hata oluştu:', error);
 }
 
-client.login(process.env.TOKEN);
+// Bot'u başlat
+client.login(process.env.TOKEN).catch(error => {
+    console.error('Bot başlatılırken hata:', error);
+});
+
+// Hata yakalama
+process.on('unhandledRejection', error => {
+    console.error('Yakalanmamış Promise Reddi:', error);
+});
+
+process.on('uncaughtException', error => {
+    console.error('Yakalanmamış Hata:', error);
+});
