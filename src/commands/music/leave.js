@@ -3,31 +3,29 @@ import { getPlayer } from '../../utils/player.js';
 
 export const command = {
     data: new SlashCommandBuilder()
-        .setName('skip')
-        .setDescription('Çalan şarkıyı atlar'),
+        .setName('leave')
+        .setDescription('Bot ses kanalından ayrılır'),
 
     async execute(interaction) {
         try {
             const player = await getPlayer(interaction.client);
             const queue = player.nodes.get(interaction.guildId);
 
-            if (!queue || !queue.isPlaying()) {
+            if (!queue) {
                 return await interaction.reply({
-                    content: '❌ Şu anda çalan bir şarkı yok!',
+                    content: '❌ Zaten bir ses kanalında değilim!',
                     ephemeral: true
                 });
             }
 
-            const currentTrack = queue.currentTrack;
-            await queue.node.skip();
-
-            await interaction.reply(`⏭️ **${currentTrack.title}** atlandı!`);
+            queue.delete();
+            await interaction.reply('👋 Ses kanalından ayrıldım!');
         } catch (error) {
-            console.error('Skip hatası:', error);
+            console.error('Leave hatası:', error);
             await interaction.reply({
                 content: '❌ Bir hata oluştu!',
                 ephemeral: true
             });
         }
     }
-};
+}; 

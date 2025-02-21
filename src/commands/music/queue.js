@@ -18,8 +18,9 @@ export const command = {
                 });
             }
 
-            const tracks = queue.tracks.data;
             const currentTrack = queue.currentTrack;
+            const tracks = queue.tracks.toArray();
+
             let description = `Şu an çalıyor: **${currentTrack.title}**\n\n`;
 
             if (tracks.length === 0) {
