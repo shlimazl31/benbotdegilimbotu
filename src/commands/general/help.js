@@ -16,10 +16,12 @@ export const command = {
                         value: 
                         '`/join` - Ses kanalına katılır\n' +
                         '`/play` - Şarkı çalar\n' +
+                        '`/search` - YouTube\'da şarkı arar\n' +
                         '`/pause` - Şarkıyı duraklatır\n' +
                         '`/resume` - Şarkıyı devam ettirir\n' +
                         '`/stop` - Müziği durdurur\n' +
                         '`/skip` - Şarkıyı atlar\n' +
+                        '`/previous` - Önceki şarkıya döner\n' +
                         '`/leave` - Kanaldan çıkar'
                     },
                     {
@@ -28,6 +30,7 @@ export const command = {
                         '`/queue` - Şarkı sırasını gösterir\n' +
                         '`/clear` - Sırayı temizler\n' +
                         '`/shuffle` - Sırayı karıştırır\n' +
+                        '`/move` - Sıradaki şarkıyı taşır\n' +
                         '`/loop` - Tekrar modunu ayarlar'
                     },
                     {
@@ -35,13 +38,21 @@ export const command = {
                         value: 
                         '`/volume` - Ses seviyesini ayarlar (1-100)\n' +
                         '`/seek` - Şarkının belirli bir saniyesine atlar\n' +
-                        '`/nowplaying` - Çalan şarkının bilgilerini gösterir'
+                        '`/nowplaying` - Çalan şarkının bilgilerini gösterir\n' +
+                        '`/lyrics` - Çalan şarkının sözlerini gösterir'
                     },
                     {
                         name: '📋 Playlist Komutları',
                         value:
                         '`/playlist play` - Playlist çalar\n' +
                         '`/playlist info` - Playlist bilgilerini gösterir'
+                    },
+                    {
+                        name: '🔧 Genel Komutlar',
+                        value:
+                        '`/stats` - Bot istatistiklerini gösterir\n' +
+                        '`/ping` - Bot gecikmesini gösterir\n' +
+                        '`/help` - Bu menüyü gösterir'
                     },
                     {
                         name: '👮 Moderasyon Komutları',
