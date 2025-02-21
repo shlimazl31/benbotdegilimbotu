@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { getPlayer } from '../../utils/player.js';
 
-export const command = {
+const command = {
     data: new SlashCommandBuilder()
         .setName('queue')
         .setDescription('Şarkı sırasını gösterir'),
@@ -47,3 +47,5 @@ export const command = {
         }
     }
 };
+
+export { command };
