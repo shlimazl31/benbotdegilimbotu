@@ -5,6 +5,12 @@ import { readdirSync } from 'fs';
 import { join } from 'path';
 import { config } from 'dotenv';
 import { REST, Routes } from 'discord.js';
+import { webcrypto } from 'node:crypto';
+
+// crypto için global polyfill
+if (!globalThis.crypto) {
+    globalThis.crypto = webcrypto;
+}
 
 // .env dosyasını yükle
 config();
@@ -21,6 +27,27 @@ const client = new Client({
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildVoiceStates
     ]
+});
+
+// Process handlers
+process.on('SIGTERM', () => {
+    console.log('SIGTERM sinyali alındı. Graceful shutdown başlatılıyor...');
+    client.destroy();
+    process.exit(0);
+});
+
+process.on('SIGINT', () => {
+    console.log('SIGINT sinyali alındı. Graceful shutdown başlatılıyor...');
+    client.destroy();
+    process.exit(0);
+});
+
+process.on('unhandledRejection', (error) => {
+    console.error('Yakalanmamış Promise Reddi:', error);
+});
+
+process.on('uncaughtException', (error) => {
+    console.error('Yakalanmamış Hata:', error);
 });
 
 // Komutları yükle
@@ -82,15 +109,9 @@ try {
 }
 
 // Bot'u başlat
-client.login(process.env.TOKEN).catch(error => {
-    console.error('Bot başlatılırken hata:', error);
-});
-
-// Hata yakalama
-process.on('unhandledRejection', error => {
-    console.error('Yakalanmamış Promise Reddi:', error);
-});
-
-process.on('uncaughtException', error => {
-    console.error('Yakalanmamış Hata:', error);
-});
+client.login(process.env.TOKEN)
+    .then(() => console.log('Bot başarıyla giriş yaptı!'))
+    .catch(error => {
+        console.error('Bot başlatılırken hata:', error);
+        process.exit(1);
+    });
