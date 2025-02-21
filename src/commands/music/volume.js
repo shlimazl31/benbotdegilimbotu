@@ -13,12 +13,14 @@ export const command = {
                 .setMaxValue(100)),
 
     async execute(interaction) {
+        await interaction.deferReply();
+
         try {
             const player = await getPlayer(interaction.client);
             const queue = player.nodes.get(interaction.guildId);
 
             if (!queue || !queue.isPlaying()) {
-                return await interaction.reply({
+                return await interaction.followUp({
                     content: '❌ Şu anda çalan bir şarkı yok!',
                     ephemeral: true
                 });
@@ -27,10 +29,10 @@ export const command = {
             const volume = interaction.options.getInteger('seviye');
             queue.node.setVolume(volume);
 
-            await interaction.reply(`🔊 Ses seviyesi **${volume}%** olarak ayarlandı!`);
+            return await interaction.followUp(`🔊 Ses seviyesi **${volume}%** olarak ayarlandı!`);
         } catch (error) {
             console.error('Volume hatası:', error);
-            await interaction.reply({
+            return await interaction.followUp({
                 content: '❌ Bir hata oluştu!',
                 ephemeral: true
             });
