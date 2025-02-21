@@ -1,6 +1,5 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { getPlayer } from '../../utils/player.js';
-import { useQueue } from 'discord-player';
 
 export const command = {
     data: new SlashCommandBuilder()
@@ -9,20 +8,24 @@ export const command = {
 
     async execute(interaction) {
         try {
-            if (!interaction.member.voice.channel) {
-                return await interaction.reply('Önce bir ses kanalına katılmalısın!');
-            }
+            const player = await getPlayer(interaction.client);
+            const queue = player.nodes.get(interaction.guildId);
 
-            const queue = useQueue(interaction.guildId);
-            if (!queue || !queue.isPlaying()) {
-                return await interaction.reply('Şu anda müzik çalmıyor!');
+            if (!queue) {
+                return await interaction.reply({
+                    content: '❌ Şu anda çalan bir şarkı yok!',
+                    ephemeral: true
+                });
             }
 
             queue.delete();
-            return await interaction.reply('⏹️ Müzik durduruldu!');
+            await interaction.reply('⏹️ Müzik durduruldu ve sıra temizlendi!');
         } catch (error) {
-            console.error(error);
-            return await interaction.reply('Bir hata oluştu!');
+            console.error('Stop hatası:', error);
+            await interaction.reply({
+                content: '❌ Bir hata oluştu!',
+                ephemeral: true
+            });
         }
     }
 };

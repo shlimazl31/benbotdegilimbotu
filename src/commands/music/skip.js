@@ -11,28 +11,23 @@ export const command = {
             const player = await getPlayer(interaction.client);
             const queue = player.nodes.get(interaction.guildId);
 
-            if (!queue) {
-                return await interaction.reply('Şu anda çalan bir şarkı yok!');
+            if (!queue || !queue.isPlaying()) {
+                return await interaction.reply({
+                    content: '❌ Şu anda çalan bir şarkı yok!',
+                    ephemeral: true
+                });
             }
 
-            if (!interaction.member.voice.channel) {
-                return await interaction.reply('Bu komutu kullanmak için bir ses kanalında olmalısın!');
-            }
+            const currentTrack = queue.currentTrack;
+            queue.node.skip();
 
-            if (interaction.member.voice.channel.id !== queue.channel.id) {
-                return await interaction.reply('Bu komutu kullanmak için botla aynı ses kanalında olmalısın!');
-            }
-
-            try {
-                await queue.node.skip();
-                await interaction.reply('⏭️ Şarkı atlandı!');
-            } catch (error) {
-                console.error('Skip hatası:', error);
-                await interaction.reply('Şarkı atlanırken bir hata oluştu!');
-            }
+            await interaction.reply(`⏭️ **${currentTrack.title}** atlandı!`);
         } catch (error) {
-            console.error('Genel skip hatası:', error);
-            await interaction.reply('Bir hata oluştu!');
+            console.error('Skip hatası:', error);
+            await interaction.reply({
+                content: '❌ Bir hata oluştu!',
+                ephemeral: true
+            });
         }
     }
 };

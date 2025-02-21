@@ -136,4 +136,14 @@ try {
                 } else {
                     client.on(event.event.name, (...args) => event.event.execute(...args));
                 }
-                console.log(`
+                console.log(`✅ Event başarıyla yüklendi: ${event.event.name}`);
+            }
+        } catch (error) {
+            console.error(`❌ ${file} event dosyası yüklenirken hata:`, error);
+        }
+    }
+} catch (error) {
+    console.error('Komut/Event yükleme hatası:', error);
+}
+
+client.login(process.env.TOKEN);

@@ -13,7 +13,12 @@ export const command = {
     async execute(interaction) {
         try {
             const channel = interaction.member.voice.channel;
-            if (!channel) return interaction.reply('Önce bir ses kanalına katılmalısın!');
+            if (!channel) {
+                return await interaction.reply({
+                    content: 'Önce bir ses kanalına katılmalısın!',
+                    ephemeral: true
+                });
+            }
 
             await interaction.deferReply();
 
@@ -24,19 +29,26 @@ export const command = {
                 const { track } = await player.play(channel, query, {
                     nodeOptions: {
                         metadata: interaction.channel,
+                        bufferingTimeout: 3000,
                         leaveOnEmpty: false,
                         leaveOnEnd: false
                     }
                 });
 
-                return interaction.followUp(`🎵 **${track.title}** sıraya eklendi!`);
+                return await interaction.followUp(`🎵 **${track.title}** sıraya eklendi!`);
             } catch (error) {
                 console.error('Çalma hatası:', error);
-                return interaction.followUp(`❌ Bir hata oluştu: ${error.message}`);
+                return await interaction.followUp({
+                    content: `❌ Bir hata oluştu: ${error.message}`,
+                    ephemeral: true
+                });
             }
         } catch (error) {
             console.error('Genel hata:', error);
-            return interaction.followUp('❌ Bir hata oluştu!');
+            return await interaction.followUp({
+                content: '❌ Bir hata oluştu!',
+                ephemeral: true
+            });
         }
     }
 };

@@ -6,7 +6,13 @@ let player = null;
 export const getPlayer = async (client) => {
     if (player) return player;
 
-    player = new Player(client);
+    player = new Player(client, {
+        ytdlOptions: {
+            quality: 'highestaudio',
+            highWaterMark: 1 << 25
+        }
+    });
+
     await player.extractors.register(YouTubeExtractor);
 
     player.events.on('playerStart', (queue, track) => {
@@ -19,7 +25,7 @@ export const getPlayer = async (client) => {
     });
 
     player.events.on('emptyQueue', (queue) => {
-        queue.metadata.send('✅ Sıra bitti!');
+        queue.metadata?.send('✅ Sıra bitti!');
     });
 
     player.events.on('disconnect', (queue) => {
