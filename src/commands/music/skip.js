@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { useQueue } from 'discord-player';
+import { getPlayer } from '../../utils/player.js';
 
 export const command = {
     data: new SlashCommandBuilder()
@@ -8,20 +8,31 @@ export const command = {
 
     async execute(interaction) {
         try {
+            const player = await getPlayer(interaction.client);
+            const queue = player.nodes.get(interaction.guildId);
+
+            if (!queue) {
+                return await interaction.reply('Şu anda çalan bir şarkı yok!');
+            }
+
             if (!interaction.member.voice.channel) {
-                return await interaction.reply('Önce bir ses kanalına katılmalısın!');
+                return await interaction.reply('Bu komutu kullanmak için bir ses kanalında olmalısın!');
             }
 
-            const queue = useQueue(interaction.guildId);
-            if (!queue || !queue.isPlaying()) {
-                return await interaction.reply('Şu anda müzik çalmıyor!');
+            if (interaction.member.voice.channel.id !== queue.channel.id) {
+                return await interaction.reply('Bu komutu kullanmak için botla aynı ses kanalında olmalısın!');
             }
 
-            queue.node.skip();
-            return await interaction.reply('⏭️ Şarkı atlandı!');
+            try {
+                await queue.node.skip();
+                await interaction.reply('⏭️ Şarkı atlandı!');
+            } catch (error) {
+                console.error('Skip hatası:', error);
+                await interaction.reply('Şarkı atlanırken bir hata oluştu!');
+            }
         } catch (error) {
-            console.error(error);
-            return await interaction.reply('Bir hata oluştu!');
+            console.error('Genel skip hatası:', error);
+            await interaction.reply('Bir hata oluştu!');
         }
     }
 };

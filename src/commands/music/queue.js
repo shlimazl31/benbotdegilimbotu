@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { getPlayer } from '../../utils/player.js';
 
 export const command = {
@@ -7,22 +7,43 @@ export const command = {
         .setDescription('Şarkı sırasını gösterir'),
 
     async execute(interaction) {
-        const player = getPlayer(interaction.client);
-        const queue = player.getQueue(interaction.guildId);
-        
-        if (!queue?.playing) return await interaction.reply('Şu anda müzik çalmıyor!');
-        
-        const currentTrack = queue.current;
-        const tracks = queue.tracks.slice(0, 10).map((m, i) => {
-            return `${i + 1}. **${m.title}** ([Link](${m.url}))`;
-        });
+        try {
+            const player = await getPlayer(interaction.client);
+            const queue = player.nodes.get(interaction.guildId);
 
-        await interaction.reply({
-            embeds: [{
-                title: 'Şarkı Sırası',
-                description: `Şu anda çalıyor: **${currentTrack.title}**\n\n${tracks.join('\n')}`,
-                color: 0xff0000
-            }]
-        });
+            if (!queue || !queue.isPlaying()) {
+                return await interaction.reply('Şu anda çalan bir şarkı yok!');
+            }
+
+            const tracks = queue.tracks.toArray();
+            const currentTrack = queue.currentTrack;
+
+            const embed = new EmbedBuilder()
+                .setTitle('🎵 Şarkı Sırası')
+                .setColor('#FF0000')
+                .addFields(
+                    { name: 'Şu anda çalıyor', value: `${currentTrack.title}` }
+                );
+
+            if (tracks.length > 0) {
+                const trackList = tracks
+                    .slice(0, 10)
+                    .map((track, i) => `${i + 1}. ${track.title}`)
+                    .join('\n');
+
+                embed.addFields(
+                    { name: 'Sıradaki Şarkılar', value: trackList }
+                );
+
+                if (tracks.length > 10) {
+                    embed.setFooter({ text: `Ve ${tracks.length - 10} şarkı daha...` });
+                }
+            }
+
+            await interaction.reply({ embeds: [embed] });
+        } catch (error) {
+            console.error('Queue komutu hatası:', error);
+            await interaction.reply('Şarkı sırası gösterilirken bir hata oluştu!');
+        }
     }
 };
