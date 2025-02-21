@@ -1,5 +1,5 @@
 import { Player } from 'discord-player';
-import { YouTubeExtractor } from '@discord-player/extractor';
+import { YoutubeiExtractor } from 'discord-player-youtubei';
 
 let player = null;
 
@@ -12,11 +12,17 @@ export const getPlayer = async (client) => {
             highWaterMark: 1 << 25
         },
         connectionOptions: {
-            selfDeaf: true // Bot kendi sesini kapatır
+            selfDeaf: true
         }
     });
 
-    await player.extractors.register(YouTubeExtractor);
+    // Sadece YouTubei extractoru kullan
+    await player.extractors.register(YoutubeiExtractor, {
+        overrideBridgeMode: "yt",
+        streamOptions: {
+            highWaterMark: 1 << 25
+        }
+    });
 
     player.events.on('playerStart', (queue, track) => {
         queue.metadata.send(`🎵 Şimdi çalıyor: **${track.title}**!`);
@@ -29,10 +35,6 @@ export const getPlayer = async (client) => {
 
     player.events.on('emptyQueue', (queue) => {
         queue.metadata?.send('✅ Sıra bitti!');
-    });
-
-    player.events.on('disconnect', (queue) => {
-        queue.metadata.send('🔌 Ses kanalından ayrıldım!');
     });
 
     return player;
