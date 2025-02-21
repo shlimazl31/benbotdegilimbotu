@@ -32,19 +32,23 @@ try {
         const commandsPath = join(foldersPath, folder);
         const commandFiles = readdirSync(commandsPath).filter(file => file.endsWith('.js'));
         
-        console.log(`${folder} klasöründeki komutlar yükleniyor...`);
+        console.log(`📂 ${folder} klasöründeki komutlar yükleniyor...`);
         
         for (const file of commandFiles) {
-            const filePath = `file://${join(commandsPath, file).replace(/\\/g, '/')}`;
-            console.log(`Yükleniyor: ${file}`);
-            
-            const command = await import(filePath);
-            
-            if ('command' in command) {
-                client.commands.set(command.command.data.name, command.command);
-                console.log(`Komut yüklendi: ${command.command.data.name}`);
-            } else {
-                console.log(`[UYARI] ${file} komut dosyasında gerekli özellikler eksik`);
+            try {
+                const filePath = `file://${join(commandsPath, file).replace(/\\/g, '/')}`;
+                console.log(`⚙️ Yükleniyor: ${file}`);
+                
+                const command = await import(filePath);
+                
+                if ('command' in command) {
+                    client.commands.set(command.command.data.name, command.command);
+                    console.log(`✅ Komut yüklendi: ${command.command.data.name}`);
+                } else {
+                    console.log(`⚠️ [UYARI] ${file} komut dosyasında gerekli özellikler eksik`);
+                }
+            } catch (commandError) {
+                console.error(`❌ ${file} komut dosyası yüklenirken hata oluştu:`, commandError);
             }
         }
     }
@@ -54,18 +58,24 @@ try {
     const eventFiles = readdirSync(eventsPath).filter(file => file.endsWith('.js'));
 
     for (const file of eventFiles) {
-        const filePath = `file://${join(eventsPath, file).replace(/\\/g, '/')}`;
-        const event = await import(filePath);
-        
-        if (event.event.once) {
-            client.once(event.event.name, (...args) => event.event.execute(...args));
-        } else {
-            client.on(event.event.name, (...args) => event.event.execute(...args));
+        try {
+            const filePath = `file://${join(eventsPath, file).replace(/\\/g, '/')}`;
+            const event = await import(filePath);
+            
+            if (event.event.once) {
+                client.once(event.event.name, (...args) => event.event.execute(...args));
+                console.log(`✅ Event yüklendi (once): ${event.event.name}`);
+            } else {
+                client.on(event.event.name, (...args) => event.event.execute(...args));
+                console.log(`✅ Event yüklendi: ${event.event.name}`);
+            }
+        } catch (eventError) {
+            console.error(`❌ ${file} event dosyası yüklenirken hata oluştu:`, eventError);
         }
     }
 
 } catch (error) {
-    console.error('Dosyalar yüklenirken hata oluştu:', error);
+    console.error('❌ Dosyalar yüklenirken hata oluştu:', error);
 }
 
 client.login(process.env.TOKEN);
