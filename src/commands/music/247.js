@@ -26,12 +26,24 @@ export const command = {
 
             if (newMode) {
                 if (!queue) {
-                    await player.voices.join(interaction.member.voice.channel);
+                    await player.nodes.create(interaction.guild, {
+                        metadata: {
+                            channel: interaction.channel,
+                            client: interaction.guild.members.me,
+                            requestedBy: interaction.user,
+                        },
+                        selfDeaf: true,
+                        volume: 80,
+                        leaveOnEmpty: false,
+                        leaveOnEmptyCooldown: 300000,
+                        leaveOnEnd: false,
+                        leaveOnEndCooldown: 300000,
+                    });
                 }
                 return await interaction.reply('✅ 24/7 modu açıldı! Artık ses kanalından çıkmayacağım.');
             } else {
                 if (queue && !queue.currentTrack) {
-                    await queue.destroy();
+                    await queue.delete();
                 }
                 return await interaction.reply('✅ 24/7 modu kapatıldı! Müzik bitince kanaldan çıkacağım.');
             }

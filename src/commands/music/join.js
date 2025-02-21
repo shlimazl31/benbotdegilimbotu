@@ -16,7 +16,28 @@ export const command = {
             }
 
             const player = await getPlayer(interaction.client);
-            await player.voices.join(interaction.member.voice.channel);
+            const queue = player.nodes.get(interaction.guildId);
+
+            if (queue) {
+                return await interaction.reply({
+                    content: '❌ Zaten bir ses kanalındayım!',
+                    ephemeral: true
+                });
+            }
+
+            await player.nodes.create(interaction.guild, {
+                metadata: {
+                    channel: interaction.channel,
+                    client: interaction.guild.members.me,
+                    requestedBy: interaction.user,
+                },
+                selfDeaf: true,
+                volume: 80,
+                leaveOnEmpty: false,
+                leaveOnEmptyCooldown: 300000,
+                leaveOnEnd: false,
+                leaveOnEndCooldown: 300000,
+            });
 
             return await interaction.reply('👋 Ses kanalına katıldım!');
         } catch (error) {
