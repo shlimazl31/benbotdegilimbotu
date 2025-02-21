@@ -1,6 +1,5 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { getPlayer } from '../../utils/player.js';
-import { QueryType } from 'discord-player';
+import { useMainPlayer, QueryType } from 'discord-player';
 
 export const command = {
     data: new SlashCommandBuilder()
@@ -13,54 +12,34 @@ export const command = {
 
     async execute(interaction) {
         try {
-            if (!interaction.member.voice.channel) {
-                return await interaction.reply('Önce bir ses kanalına katılmalısın!');
-            }
+            const channel = interaction.member.voice.channel;
+            if (!channel) return interaction.reply('Önce bir ses kanalına katılmalısın!');
 
             await interaction.deferReply();
 
-            const player = await getPlayer(interaction.client);
-            const query = interaction.options.getString('şarkı');
+            const player = useMainPlayer();
+            const query = interaction.options.getString('şarkı', true);
 
-            const queue = player.nodes.create(interaction.guild, {
-                metadata: interaction.channel,
-                bufferingTimeout: 3000,
-                volume: 100,
-                leaveOnEmpty: false,
-                leaveOnEnd: false,
-            });
+            try {
+                const { track } = await player.play(channel, query, {
+                    nodeOptions: {
+                        metadata: interaction.channel,
+                        leaveOnEmpty: false,
+                        leaveOnEnd: false,
+                        volume: 100,
+                        bufferingTimeout: 3000
+                    }
+                });
 
-            if (!queue.connection) {
-                await queue.connect(interaction.member.voice.channel);
+                return interaction.followUp(`🎵 **${track.title}** sıraya eklendi!\n🔗 ${track.url}`);
+            } catch (error) {
+                console.error('Çalma hatası:', error);
+                return interaction.followUp(`❌ Bir hata oluştu: ${error.message}`);
             }
-
-            const result = await player.search(query, {
-                requestedBy: interaction.user,
-            });
-
-            // Debug için result yapısını kontrol et
-            console.log('Arama sonucu:', {
-                hasItems: !!result.items,
-                itemCount: result.items?.length,
-                firstItem: result.items?.[0],
-            });
-
-            if (!result.items?.length) {
-                return interaction.followUp('Sonuç bulunamadı!');
-            }
-
-            const song = result.items[0];
-            queue.addTrack(song);
-
-            if (!queue.isPlaying()) {
-                await queue.node.play();
-            }
-
-            return await interaction.followUp(`🎵 **${song.title}** sıraya eklendi!\n🔗 ${song.url || song.id}`);
 
         } catch (error) {
-            console.error('Play komutu hatası:', error);
-            return await interaction.followUp('Bir hata oluştu! Hata detayı: ' + error.message);
+            console.error('Genel hata:', error);
+            return interaction.followUp('❌ Bir hata oluştu!');
         }
     }
 };

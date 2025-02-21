@@ -1,42 +1,33 @@
 import { Player } from 'discord-player';
-import { YouTubeExtractor } from '@discord-player/extractor';
-import * as youtubei from 'discord-player-youtubei';
+import { DefaultExtractors } from '@discord-player/extractor';
 
 let player = null;
 
 export const getPlayer = async (client) => {
     if (player) return player;
 
-    player = new Player(client, {
-        ytdlOptions: {
-            quality: 'highestaudio',
-            highWaterMark: 1 << 25,
-            dlChunkSize: 0
-        }
-    });
+    // Ana player instance'ı oluştur
+    player = new Player(client);
 
-    // Önce YouTubei, sonra yedek olarak YouTube extractor'ı ekle
-    await player.extractors.register(youtubei.default);
-    await player.extractors.register(YouTubeExtractor);
+    // Tüm default extractorları yükle
+    await player.extractors.loadMulti(DefaultExtractors);
 
+    // Player eventlerini ayarla
     player.events.on('playerStart', (queue, track) => {
-        queue.metadata.channel.send(`🎵 Şimdi çalıyor: **${track.title}**\n🔗 ${track.url}`);
+        queue.metadata.send(`🎵 Şimdi çalıyor: **${track.title}**!`);
     });
 
     player.events.on('error', (queue, error) => {
-        console.error(`Player hatası: ${error.message}`);
-        console.error(error);
-        queue?.metadata?.channel?.send('❌ Müzik çalarken bir hata oluştu!');
-    });
-
-    player.events.on('connectionError', (queue, error) => {
-        console.error(`Bağlantı hatası: ${error.message}`);
-        console.error(error);
-        queue?.metadata?.channel?.send('❌ Bağlantı hatası oluştu!');
+        console.error('Player hatası:', error);
+        queue.metadata.send('❌ Bir hata oluştu!');
     });
 
     player.events.on('emptyQueue', (queue) => {
-        queue.metadata.channel.send('✅ Sıra bitti!');
+        queue.metadata.send('✅ Sıra bitti!');
+    });
+
+    player.events.on('disconnect', (queue) => {
+        queue.metadata.send('🔌 Ses kanalından ayrıldım!');
     });
 
     return player;
