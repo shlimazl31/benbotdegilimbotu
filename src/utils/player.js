@@ -1,6 +1,6 @@
 import { Player } from 'discord-player';
 import { YouTubeExtractor } from '@discord-player/extractor';
-import youtubei from 'discord-player-youtubei';
+import * as youtubei from 'discord-player-youtubei';
 
 let player = null;
 
@@ -16,7 +16,7 @@ export const getPlayer = async (client) => {
     });
 
     // Önce YouTubei, sonra yedek olarak YouTube extractor'ı ekle
-    await player.extractors.register(youtubei);
+    await player.extractors.register(youtubei.default);
     await player.extractors.register(YouTubeExtractor);
 
     player.events.on('playerStart', (queue, track) => {
