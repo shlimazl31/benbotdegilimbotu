@@ -31,11 +31,13 @@ const client = new Client({
     ]
 });
 
+client.commands = new Collection();
+
 // Global player instance'ı oluştur
 const player = new Player(client);
 
-// Player'ı başlat
-await player.extractors.loadMulti(DefaultExtractors);
+// Extractors'ı register et
+await player.extractors.register(DefaultExtractors);
 
 // Player eventlerini ayarla
 player.events.on('playerStart', (queue, track) => {
@@ -69,8 +71,6 @@ process.on('uncaughtException', (error) => {
 });
 
 // Komutları yükle
-client.commands = new Collection();
-
 try {
     const foldersPath = join(__dirname, 'src', 'commands');
     const commandFolders = readdirSync(foldersPath);
