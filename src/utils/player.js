@@ -1,8 +1,16 @@
 import { Player } from 'discord-player';
-import { GatewayIntentBits } from 'discord.js';
+
+let player = null;
 
 export const getPlayer = async (client) => {
-    const player = new Player(client);
+    if (player) return player;
+
+    player = new Player(client, {
+        ytdlOptions: {
+            quality: 'highestaudio',
+            highWaterMark: 1 << 25
+        }
+    });
 
     player.events.on('playerStart', (queue, track) => {
         queue.metadata.channel.send(`🎵 Şimdi çalıyor: **${track.title}**`);
