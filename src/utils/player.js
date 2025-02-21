@@ -10,6 +10,9 @@ export const getPlayer = async (client) => {
         ytdlOptions: {
             quality: 'highestaudio',
             highWaterMark: 1 << 25
+        },
+        connectionOptions: {
+            selfDeaf: true // Bot kendi sesini kapatır
         }
     });
 
