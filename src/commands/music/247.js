@@ -26,19 +26,24 @@ export const command = {
 
             if (newMode) {
                 if (!queue) {
-                    await player.nodes.create(interaction.guild, {
-                        metadata: {
-                            channel: interaction.channel,
-                            client: interaction.guild.members.me,
-                            requestedBy: interaction.user,
-                        },
-                        selfDeaf: true,
-                        volume: 80,
-                        leaveOnEmpty: false,
-                        leaveOnEmptyCooldown: 300000,
-                        leaveOnEnd: false,
-                        leaveOnEndCooldown: 300000,
-                    });
+                    try {
+                        await player.nodes.create(interaction.guild, {
+                            metadata: interaction,
+                            channelId: interaction.member.voice.channel.id,
+                            selfDeaf: true,
+                            volume: 80,
+                            leaveOnEmpty: false,
+                            leaveOnEmptyCooldown: 300000,
+                            leaveOnEnd: false,
+                            leaveOnEndCooldown: 300000,
+                        });
+                    } catch (error) {
+                        console.error('Ses kanalına katılma hatası:', error);
+                        return await interaction.reply({
+                            content: '❌ Ses kanalına katılırken bir hata oluştu!',
+                            ephemeral: true
+                        });
+                    }
                 }
                 return await interaction.reply('✅ 24/7 modu açıldı! Artık ses kanalından çıkmayacağım.');
             } else {
