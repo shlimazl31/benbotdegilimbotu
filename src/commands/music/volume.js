@@ -1,5 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { getPlayer } from '../../utils/player.js';
+import { getGuildVolume, setGuildVolume } from '../../utils/settings.js';
 
 export const command = {
     data: new SlashCommandBuilder()
@@ -28,6 +29,9 @@ export const command = {
 
             const volume = interaction.options.getInteger('seviye');
             queue.node.setVolume(volume);
+            
+            // Ses seviyesini kaydet
+            setGuildVolume(interaction.guildId, volume);
 
             return await interaction.followUp(`🔊 Ses seviyesi **${volume}%** olarak ayarlandı!`);
         } catch (error) {

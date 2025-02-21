@@ -1,5 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { getPlayer } from '../../utils/player.js';
+import { getGuildVolume } from '../../utils/settings.js';
 
 export const command = {
     data: new SlashCommandBuilder()
@@ -29,6 +30,7 @@ export const command = {
                 const { track } = await player.play(channel, query, {
                     nodeOptions: {
                         metadata: interaction.channel,
+                        volume: getGuildVolume(interaction.guildId),
                         bufferingTimeout: 3000,
                         leaveOnEmpty: false,
                         leaveOnEnd: false
