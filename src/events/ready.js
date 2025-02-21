@@ -7,35 +7,38 @@ export const event = {
         try {
             console.log(`Bot olarak giriş yapıldı: ${client.user.tag}`);
             
+            // Mevcut komutları kontrol et
+            console.log('Mevcut komutlar:', Array.from(client.commands.keys()));
+            
             // Komutları topla
             const commands = [];
-            console.log('Mevcut komutlar:', client.commands);
-            
             client.commands.forEach(command => {
                 try {
                     console.log(`Komut işleniyor: ${command.data.name}`);
-                    const jsonData = command.data.toJSON();
-                    console.log('Komut JSON:', jsonData);
-                    commands.push(jsonData);
+                    commands.push(command.data.toJSON());
                 } catch (error) {
-                    console.error('Komut işlenirken hata:', error);
+                    console.error(`Komut işlenirken hata (${command.data?.name}):`, error);
                 }
             });
             
-            console.log('İşlenen komutlar:', commands);
-            
             if (commands.length === 0) {
-                console.error('HATA: Hiç komut yüklenemedi!');
+                console.error('HATA: Hiç komut bulunamadı!');
                 return;
             }
-            
+
             // REST API'yi hazırla
             const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
             
-            console.log('Slash komutlar yükleniyor...');
-            
             try {
-                // Global komutları kaydet
+                console.log('Slash komutlar yükleniyor...');
+                
+                // Önce mevcut komutları al
+                const existingCommands = await rest.get(
+                    Routes.applicationCommands(client.user.id)
+                );
+                console.log('Mevcut Discord komutları:', existingCommands);
+                
+                // Yeni komutları kaydet
                 const data = await rest.put(
                     Routes.applicationCommands(client.user.id),
                     { body: commands }
@@ -44,11 +47,11 @@ export const event = {
                 console.log(`${data.length} komut başarıyla yüklendi:`);
                 data.forEach(cmd => console.log(`- ${cmd.name}`));
             } catch (error) {
-                console.error('Komutlar Discord\'a kaydedilirken hata:', error);
+                console.error('Discord API hatası:', error);
             }
             
         } catch (error) {
-            console.error('Ready event\'inde hata:', error);
+            console.error('Ready event hatası:', error);
         }
     }
 };
