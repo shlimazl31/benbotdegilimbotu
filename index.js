@@ -54,7 +54,6 @@ process.on('uncaughtException', (error) => {
 client.commands = new Collection();
 
 try {
-    // Komutları yükle
     const foldersPath = join(__dirname, 'src', 'commands');
     const commandFolders = readdirSync(foldersPath);
 
@@ -67,33 +66,40 @@ try {
         console.log(`📂 ${folder} klasöründeki komutlar:`, commandFiles);
         
         for (const file of commandFiles) {
+            const filePath = `file://${join(commandsPath, file).replace(/\\/g, '/')}`;
+            console.log(`⚙️ Dosya yükleniyor: ${filePath}`);
+            
             try {
-                const filePath = `file://${join(commandsPath, file).replace(/\\/g, '/')}`;
-                console.log(`⚙️ Yüklemeye çalışılıyor: ${filePath}`);
-                
                 const commandModule = await import(filePath);
-                console.log('Yüklenen modül:', commandModule);
+                console.log(`📦 Modül içeriği (${file}):`, commandModule);
                 
-                if ('command' in commandModule) {
-                    console.log('Command bulundu:', commandModule.command);
-                    if (commandModule.command.data) {
-                        console.log('Command data bulundu:', commandModule.command.data);
-                        client.commands.set(commandModule.command.data.name, commandModule.command);
-                        console.log(`✅ Komut başarıyla yüklendi: ${commandModule.command.data.name}`);
-                    } else {
-                        console.log(`⚠️ [UYARI] ${file} komutunda data özelliği yok`);
-                    }
-                } else {
-                    console.log(`⚠️ [UYARI] ${file} dosyasında command export edilmemiş`);
-                    console.log('Modül içeriği:', commandModule);
+                if (!commandModule.command) {
+                    console.error(`❌ ${file} dosyasında 'command' export bulunamadı`);
+                    continue;
                 }
+
+                if (!commandModule.command.data) {
+                    console.error(`❌ ${file} dosyasında 'command.data' bulunamadı`);
+                    continue;
+                }
+
+                const commandName = commandModule.command.data.name;
+                console.log(`✨ Komut adı: ${commandName}`);
+                
+                client.commands.set(commandName, commandModule.command);
+                console.log(`✅ Komut başarıyla yüklendi: ${commandName}`);
             } catch (error) {
                 console.error(`❌ ${file} komut dosyası yüklenirken hata:`, error);
             }
         }
     }
 
-    console.log('Yüklenen komutlar:', Array.from(client.commands.keys()));
+    const loadedCommands = Array.from(client.commands.keys());
+    console.log('✅ Yüklenen tüm komutlar:', loadedCommands);
+    
+    if (loadedCommands.length === 0) {
+        console.error('⚠️ UYARI: Hiç komut yüklenemedi!');
+    }
 
     // Event'leri yükle
     const eventsPath = join(__dirname, 'src', 'events');
@@ -117,7 +123,7 @@ try {
         }
     }
 } catch (error) {
-    console.error('Genel bir hata oluştu:', error);
+    console.error('❌ Genel bir hata oluştu:', error);
 }
 
 // Bot'u başlat

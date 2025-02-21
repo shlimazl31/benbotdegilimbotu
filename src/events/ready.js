@@ -9,30 +9,46 @@ export const event = {
             
             // Komutları topla
             const commands = [];
+            console.log('Mevcut komutlar:', client.commands);
+            
             client.commands.forEach(command => {
-                console.log(`Komut yükleniyor: ${command.data.name}`);
-                commands.push(command.data.toJSON());
+                try {
+                    console.log(`Komut işleniyor: ${command.data.name}`);
+                    const jsonData = command.data.toJSON();
+                    console.log('Komut JSON:', jsonData);
+                    commands.push(jsonData);
+                } catch (error) {
+                    console.error('Komut işlenirken hata:', error);
+                }
             });
             
-            console.log('Komutlar hazırlanıyor...');
-            console.log('Komut listesi:', commands);
+            console.log('İşlenen komutlar:', commands);
+            
+            if (commands.length === 0) {
+                console.error('HATA: Hiç komut yüklenemedi!');
+                return;
+            }
             
             // REST API'yi hazırla
             const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
             
             console.log('Slash komutlar yükleniyor...');
             
-            // Global komutları kaydet
-            const data = await rest.put(
-                Routes.applicationCommands(client.user.id),
-                { body: commands }
-            );
-            
-            console.log(`${data.length} slash komut başarıyla yüklendi!`);
-            console.log(`${client.user.tag} hazır!`);
+            try {
+                // Global komutları kaydet
+                const data = await rest.put(
+                    Routes.applicationCommands(client.user.id),
+                    { body: commands }
+                );
+                
+                console.log(`${data.length} komut başarıyla yüklendi:`);
+                data.forEach(cmd => console.log(`- ${cmd.name}`));
+            } catch (error) {
+                console.error('Komutlar Discord\'a kaydedilirken hata:', error);
+            }
             
         } catch (error) {
-            console.error('Komutlar yüklenirken hata:', error);
+            console.error('Ready event\'inde hata:', error);
         }
     }
 };
