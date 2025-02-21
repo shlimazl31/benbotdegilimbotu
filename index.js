@@ -7,7 +7,8 @@ import { config } from 'dotenv';
 import { REST, Routes } from 'discord.js';
 import { webcrypto } from 'node:crypto';
 import { Player } from 'discord-player';
-import { DefaultExtractors } from '@discord-player/extractor';
+import pkg from '@discord-player/extractor';
+const { DefaultExtractors } = pkg;
 
 // crypto için global polyfill
 if (!globalThis.crypto) {
@@ -25,9 +26,8 @@ const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.GuildVoiceStates
+        GatewayIntentBits.GuildVoiceStates,  // Ses için gerekli
+        GatewayIntentBits.MessageContent     // Mesaj içeriği için gerekli
     ]
 });
 
@@ -44,7 +44,7 @@ player.events.on('playerStart', (queue, track) => {
 
 player.events.on('error', (queue, error) => {
     console.error('Player hatası:', error);
-    queue.metadata.send('❌ Bir hata oluştu!');
+    queue.metadata?.send('❌ Bir hata oluştu!');
 });
 
 // Process handlers
