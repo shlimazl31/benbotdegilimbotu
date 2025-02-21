@@ -1,5 +1,11 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { getPlayer } from '../../utils/player.js';
+import { webcrypto } from 'node:crypto';
+
+// Node 18+ için crypto polyfill
+if (!globalThis.crypto) {
+    globalThis.crypto = webcrypto;
+}
 
 export const command = {
     data: new SlashCommandBuilder()
