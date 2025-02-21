@@ -73,11 +73,37 @@ export const command = {
 
                 // Şarkıyı çal
                 try {
+                    console.log('Queue durumu:', {
+                        connected: queue.connection ? 'evet' : 'hayır',
+                        playing: queue.isPlaying() ? 'evet' : 'hayır',
+                        paused: queue.node.isPaused() ? 'evet' : 'hayır'
+                    });
+
                     await queue.node.play(track);
-                    console.log('Şarkı çalmaya başladı');
+                    
+                    // Bağlantıyı kontrol et
+                    if (!queue.connection || !queue.connection.state.status === 'ready') {
+                        console.error('Bağlantı hazır değil');
+                        return await interaction.followUp('Ses bağlantısı kurulamadı!');
+                    }
+
+                    // Ses seviyesini kontrol et
+                    await queue.node.setVolume(80);
+                    
+                    console.log('Şarkı başlatıldı:', {
+                        title: track.title,
+                        duration: track.duration,
+                        source: track.source
+                    });
+
                     return await interaction.followUp(`🎵 Sıraya eklendi: **${track.title}**`);
                 } catch (playError) {
-                    console.error('Şarkı çalma hatası:', playError);
+                    console.error('Detaylı çalma hatası:', {
+                        message: playError.message,
+                        stack: playError.stack,
+                        queue: queue ? 'mevcut' : 'yok',
+                        connection: queue?.connection ? 'bağlı' : 'bağlı değil'
+                    });
                     return await interaction.followUp(`Şarkı çalınırken hata oluştu: ${playError.message}`);
                 }
             } catch (error) {

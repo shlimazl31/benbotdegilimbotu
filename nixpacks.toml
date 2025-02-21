@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ['nodejs', 'python3', 'gcc', 'gnumake']
+nixPkgs = ['nodejs', 'python3', 'gcc', 'gnumake', 'pkg-config', 'libtool', 'autoconf', 'automake', 'ffmpeg']
 
 [phases.install]
 cmds = ['npm install --legacy-peer-deps']

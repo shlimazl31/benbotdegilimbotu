@@ -14,11 +14,12 @@ export const getPlayer = async (client) => {
     const player = new Player(client, {
         ytdlOptions: {
             quality: 'highestaudio',
-            highWaterMark: 1 << 25
+            highWaterMark: 1 << 25,
+            dlChunkSize: 0, // Chunk boyutunu sıfırla
         },
         connectionTimeout: 999_999,
         smoothVolume: true,
-        debug: true // Hata ayıklama için logları açalım
+        debug: true
     });
 
     // Extractors'ı yükle
@@ -26,22 +27,43 @@ export const getPlayer = async (client) => {
 
     // Player event'lerini dinle
     player.events.on('debug', (message) => {
-        console.log(`Player Debug: ${message}`);
+        if (typeof message === 'object') {
+            console.log('Player Debug:', JSON.stringify(message, null, 2));
+        } else {
+            console.log('Player Debug:', message);
+        }
     });
 
     player.events.on('error', (queue, error) => {
-        console.error(`Player Error: ${error.message}`);
-        console.error(error);
+        console.error('Player Error:', error.message);
+        if (queue) {
+            console.error('Queue state:', {
+                playing: queue.isPlaying(),
+                connection: queue.connection ? 'connected' : 'disconnected',
+                tracks: queue.tracks.length
+            });
+        }
     });
 
-    player.events.on('playerError', (queue, error) => {
-        console.error(`Player Error: ${error.message}`);
-        console.error(error);
+    player.events.on('connectionError', (queue, error) => {
+        console.error('Connection Error:', error.message);
     });
 
     player.events.on('playerStart', (queue, track) => {
-        console.log(`Playing: ${track.title}`);
+        console.log('Track Info:', {
+            title: track.title,
+            duration: track.duration,
+            url: track.url,
+            source: track.source
+        });
         queue.metadata.channel.send(`🎵 Şimdi çalıyor: **${track.title}**`);
+    });
+
+    // FFmpeg ayarlarını kontrol et
+    player.events.on('debug', (message) => {
+        if (message.includes('FFmpeg')) {
+            console.log('FFmpeg Debug:', message);
+        }
     });
 
     player.events.on('audioTrackAdd', (queue, track) => {
