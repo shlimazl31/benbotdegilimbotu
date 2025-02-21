@@ -40,7 +40,8 @@ export const command = {
                         '`/volume` - Ses seviyesini ayarlar (1-100)\n' +
                         '`/seek` - Şarkının belirli bir saniyesine atlar\n' +
                         '`/nowplaying` - Çalan şarkının bilgilerini gösterir\n' +
-                        '`/lyrics` - Çalan şarkının sözlerini gösterir'
+                        '`/lyrics` - Çalan şarkının sözlerini gösterir\n' +
+                        '`/autoplay` - Otomatik oynatma modunu açar/kapatır'
                     },
                     {
                         name: '📋 Playlist Komutları',
