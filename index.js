@@ -7,8 +7,7 @@ import { config } from 'dotenv';
 import { REST, Routes } from 'discord.js';
 import { webcrypto } from 'node:crypto';
 import { Player } from 'discord-player';
-import pkg from '@discord-player/extractor';
-const { DefaultExtractors } = pkg;
+import { YouTubeExtractor } from '@discord-player/extractor';
 
 // crypto için global polyfill
 if (!globalThis.crypto) {
@@ -21,6 +20,9 @@ config();
 // __dirname'i ESM için düzelt
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Debug için DefaultExtractors'ı kontrol et
+console.log('DefaultExtractors:', YouTubeExtractor);
 
 const client = new Client({
     intents: [
@@ -36,8 +38,8 @@ client.commands = new Collection();
 // Global player instance'ı oluştur
 const player = new Player(client);
 
-// Extractors'ı register et
-await player.extractors.register(DefaultExtractors);
+// Sadece YouTube extractoru kullan
+await player.extractors.register(YouTubeExtractor);
 
 // Player eventlerini ayarla
 player.events.on('playerStart', (queue, track) => {
@@ -134,20 +136,4 @@ try {
                 } else {
                     client.on(event.event.name, (...args) => event.event.execute(...args));
                 }
-                console.log(`✅ Event yüklendi${event.event.once ? ' (once)' : ''}: ${event.event.name}`);
-            }
-        } catch (eventError) {
-            console.error(`❌ ${file} event dosyası yüklenirken hata oluştu:`, eventError);
-        }
-    }
-} catch (error) {
-    console.error('❌ Genel bir hata oluştu:', error);
-}
-
-// Bot'u başlat
-client.login(process.env.TOKEN)
-    .then(() => console.log('Bot başarıyla giriş yaptı!'))
-    .catch(error => {
-        console.error('Bot başlatılırken hata:', error);
-        process.exit(1);
-    });
+                console.log(`

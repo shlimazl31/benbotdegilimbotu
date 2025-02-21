@@ -25,18 +25,15 @@ export const command = {
                     nodeOptions: {
                         metadata: interaction.channel,
                         leaveOnEmpty: false,
-                        leaveOnEnd: false,
-                        volume: 100,
-                        bufferingTimeout: 3000
+                        leaveOnEnd: false
                     }
                 });
 
-                return interaction.followUp(`🎵 **${track.title}** sıraya eklendi!\n🔗 ${track.url}`);
+                return interaction.followUp(`🎵 **${track.title}** sıraya eklendi!`);
             } catch (error) {
                 console.error('Çalma hatası:', error);
                 return interaction.followUp(`❌ Bir hata oluştu: ${error.message}`);
             }
-
         } catch (error) {
             console.error('Genel hata:', error);
             return interaction.followUp('❌ Bir hata oluştu!');
