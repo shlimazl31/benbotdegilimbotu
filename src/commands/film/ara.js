@@ -1,14 +1,6 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import fetch from 'node-fetch';
 
-const options = {
-    method: 'GET',
-    headers: {
-        accept: 'application/json',
-        Authorization: `Bearer ${process.env.TMDB_TOKEN}`
-    }
-};
-
 export const command = {
     data: new SlashCommandBuilder()
         .setName('film')
@@ -50,8 +42,7 @@ export const command = {
                             { name: 'TV Film', value: '10770' },
                             { name: 'Gerilim', value: '53' },
                             { name: 'Savaş', value: '10752' },
-                            { name: 'Western', value: '37' },
-                            { name: 'Politik', value: '10768' }
+                            { name: 'Western', value: '37' }
                         ))),
 
     async execute(interaction) {
@@ -62,7 +53,6 @@ export const command = {
         if (subcommand === 'ara') {
             const filmAdi = interaction.options.getString('isim');
             console.log('Aranıyor:', filmAdi);
-            console.log('API Key:', process.env.TMDB_API_KEY ? 'Mevcut' : 'Eksik');
 
             try {
                 const response = await fetch(
