@@ -50,6 +50,14 @@ export const command = {
                         '`/playlist info` - Playlist bilgilerini gösterir'
                     },
                     {
+                        name: '🎬 Film Komutları',
+                        value:
+                        '`/film ara` - Film arama\n' +
+                        '`/film kategori` - Kategoriye göre film listesi\n' +
+                        '`/filmdetay` - Film hakkında detaylı bilgi\n' +
+                        '`/rastgelefilm` - Rastgele film önerisi'
+                    },
+                    {
                         name: '🔧 Genel Komutlar',
                         value:
                         '`/stats` - Bot istatistiklerini gösterir\n' +

@@ -33,6 +33,13 @@ Modern ve kullanıcı dostu bir Discord müzik botu. YouTube ve Spotify desteği
 - `/playlist play` - YouTube veya Spotify playlistlerini çalar
 - `/playlist info` - Playlist bilgilerini gösterir
 
+### 🎬 Film Komutları
+* `/film ara` - Film arama
+* `/film kategori` - Kategoriye göre film listesi
+* `/filmdetay` - Film hakkında detaylı bilgi
+* `/rastgelefilm` - Rastgele film önerisi
+
+
 ### 👮 Moderasyon
 - `/purge` - Belirtilen sayıda mesajı siler (1-100)
 
@@ -40,6 +47,7 @@ Modern ve kullanıcı dostu bir Discord müzik botu. YouTube ve Spotify desteği
 - `/help` - Tüm komutları ve açıklamalarını gösterir
 - `/ping` - Bot gecikmesini gösterir
 - `/stats` - Bot istatistiklerini gösterir
+
 
 ## 🌐 Web Panel (Yapım Aşamasında)
 
