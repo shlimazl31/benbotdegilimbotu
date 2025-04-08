@@ -23,8 +23,16 @@ export const getPlayer = async (client) => {
             highWaterMark: 1 << 25
         }
     });
-
-    // playerStart eventini kaldırdık
+    
+    // Player event'lerini ayarla
+    player.events.on('playerStart', (queue, track) => {
+        try {
+            queue.metadata?.send(`🎵 Şimdi çalıyor: **${track.title}**!`);
+            console.log(`🎵 Şarkı çalınıyor: ${track.title}`);
+        } catch (error) {
+            console.error('playerStart event hatası:', error);
+        }
+    });
     
     player.events.on('error', (queue, error) => {
         console.error('Player hatası:', error);
