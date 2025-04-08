@@ -6,8 +6,7 @@ import { join } from 'path';
 import { config } from 'dotenv';
 import { REST, Routes } from 'discord.js';
 import { webcrypto } from 'node:crypto';
-import { Player } from 'discord-player';
-import { YouTubeExtractor } from '@discord-player/extractor';
+import { getPlayer } from './src/utils/player.js';
 
 // crypto için global polyfill
 if (!globalThis.crypto) {
@@ -21,9 +20,6 @@ config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Debug için DefaultExtractors'ı kontrol et
-console.log('DefaultExtractors:', YouTubeExtractor);
-
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -34,22 +30,6 @@ const client = new Client({
 });
 
 client.commands = new Collection();
-
-// Global player instance'ı oluştur
-const player = new Player(client);
-
-// Sadece YouTube extractoru kullan
-await player.extractors.register(YouTubeExtractor);
-
-// Player eventlerini ayarla
-player.events.on('playerStart', (queue, track) => {
-    queue.metadata.send(`🎵 Şimdi çalıyor: **${track.title}**!`);
-});
-
-player.events.on('error', (queue, error) => {
-    console.error('Player hatası:', error);
-    queue.metadata?.send('❌ Bir hata oluştu!');
-});
 
 // Process handlers
 process.on('SIGTERM', () => {
@@ -171,4 +151,16 @@ try {
     console.error('Komut/Event yükleme hatası:', error);
 }
 
+// Player'ı başlat
+async function initializePlayer(client) {
+    try {
+        await getPlayer(client);
+        console.log('✅ Discord Player başlatıldı');
+    } catch (error) {
+        console.error('❌ Discord Player başlatma hatası:', error);
+    }
+}
+
+// Bot başlatma ve giriş
+await initializePlayer(client);
 client.login(process.env.TOKEN);
