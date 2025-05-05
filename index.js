@@ -54,19 +54,20 @@ process.on('uncaughtException', (error) => {
 
 // Komutları yükle
 try {
-    const commands = new Map();  // Tekrar eden komutları kontrol etmek için Map kullanıyoruz
+    const commands = new Map();
     const foldersPath = join(__dirname, 'src', 'commands');
     const commandFolders = readdirSync(foldersPath);
 
     console.log('Komut klasörleri:', commandFolders);
 
-    for (const folder of commandFolders) {
+    // Paralel komut yükleme
+    await Promise.all(commandFolders.map(async (folder) => {
         const commandsPath = join(foldersPath, folder);
         const commandFiles = readdirSync(commandsPath).filter(file => file.endsWith('.js'));
         
         console.log(`📂 ${folder} klasöründeki komutlar:`, commandFiles);
         
-        for (const file of commandFiles) {
+        await Promise.all(commandFiles.map(async (file) => {
             const filePath = `file://${join(commandsPath, file).replace(/\\/g, '/')}`;
             console.log(`⚙️ Dosya yükleniyor: ${filePath}`);
             
@@ -75,22 +76,21 @@ try {
                 
                 if (!commandModule.command) {
                     console.error(`❌ ${file} dosyasında 'command' export bulunamadı`);
-                    continue;
+                    return;
                 }
 
                 if (!commandModule.command.data) {
                     console.error(`❌ ${file} dosyasında 'command.data' bulunamadı`);
-                    continue;
+                    return;
                 }
 
                 const commandName = commandModule.command.data.name;
 
-                // Tekrar eden komut kontrolü
                 if (commands.has(commandName)) {
                     console.error(`❌ HATA: '${commandName}' komutu birden fazla kez tanımlanmış!`);
                     console.error(`   İlk tanım: ${commands.get(commandName)}`);
                     console.error(`   İkinci tanım: ${filePath}`);
-                    continue;
+                    return;
                 }
 
                 commands.set(commandName, filePath);
@@ -99,8 +99,8 @@ try {
             } catch (error) {
                 console.error(`❌ ${file} komut dosyası yüklenirken hata:`, error);
             }
-        }
-    }
+        }));
+    }));
 
     // Komutları Discord'a kaydet
     const rest = new REST().setToken(process.env.TOKEN);

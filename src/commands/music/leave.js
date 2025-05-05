@@ -1,34 +1,31 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { getPlayer } from '../../utils/player.js';
-import { getGuildSetting } from '../../utils/guildSettings.js';
+import { getVoiceConnection } from '@discordjs/voice';
 
 export const command = {
     data: new SlashCommandBuilder()
         .setName('leave')
-        .setDescription('Ses kanalından çıkar'),
+        .setDescription('Ses kanalından ayrılır'),
 
     async execute(interaction) {
         try {
-            const player = await getPlayer(interaction.client);
-            const queue = player.nodes.get(interaction.guildId);
-
-            if (!queue) {
+            if (!interaction.guild) {
                 return await interaction.reply({
-                    content: '❌ Zaten ses kanalında değilim!',
+                    content: '❌ Bu komut sadece sunucularda kullanılabilir!',
                     ephemeral: true
                 });
             }
 
-            const mode247 = getGuildSetting(interaction.guildId, '247');
-            if (mode247) {
+            const connection = getVoiceConnection(interaction.guild.id);
+            
+            if (!connection) {
                 return await interaction.reply({
-                    content: '❌ 24/7 modu açık! Önce `/247` komutu ile kapatmalısın.',
+                    content: '❌ Zaten bir ses kanalında değilim!',
                     ephemeral: true
                 });
             }
 
-            await queue.destroy();
-            return await interaction.reply('👋 Ses kanalından çıktım!');
+            connection.destroy();
+            return await interaction.reply('👋 Ses kanalından ayrıldım!');
         } catch (error) {
             console.error('Leave komutu hatası:', error);
             return await interaction.reply({

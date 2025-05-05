@@ -8,10 +8,24 @@ export const command = {
 
     async execute(interaction) {
         try {
-            const player = await getPlayer(interaction.client);
-            const queue = player.nodes.get(interaction.guildId);
+            if (!interaction.guild) {
+                return await interaction.reply({
+                    content: '❌ Bu komut sadece sunucularda kullanılabilir!',
+                    ephemeral: true
+                });
+            }
 
-            if (!queue || !queue.isPlaying()) {
+            const player = await getPlayer(interaction.client);
+            const queue = player.nodes.get(interaction.guild.id);
+
+            if (!queue) {
+                return await interaction.reply({
+                    content: '❌ Şu anda çalan bir şarkı yok!',
+                    ephemeral: true
+                });
+            }
+
+            if (!queue.isPlaying()) {
                 return await interaction.reply({
                     content: '❌ Şu anda çalan bir şarkı yok!',
                     ephemeral: true
@@ -19,7 +33,14 @@ export const command = {
             }
 
             const currentTrack = queue.currentTrack;
-            await queue.node.skip();
+            const success = await queue.node.skip();
+
+            if (!success) {
+                return await interaction.reply({
+                    content: '❌ Şarkı atlanırken bir hata oluştu!',
+                    ephemeral: true
+                });
+            }
 
             await interaction.reply(`⏭️ **${currentTrack.title}** atlandı!`);
         } catch (error) {

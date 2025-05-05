@@ -84,12 +84,18 @@ export const command = {
                             tracks.map((track, i) => `${i + 1}. **${track.title}**`).join('\n') +
                             (playlist.tracks.length > 10 ? `\n\n...ve ${playlist.tracks.length - 10} şarkı daha` : '')
                         )
-                        .addFields(
-                            { name: '👤 Oluşturan', value: playlist.author, inline: true },
-                            { name: '🎵 Toplam Şarkı', value: playlist.tracks.length.toString(), inline: true }
-                        )
-                        .setThumbnail(playlist.thumbnail)
                         .setColor('#FF0000');
+
+                    // Güvenli bir şekilde alanları ekle
+                    if (playlist.author) {
+                        embed.addFields({ name: '👤 Oluşturan', value: playlist.author.toString(), inline: true });
+                    }
+                    
+                    embed.addFields({ name: '🎵 Toplam Şarkı', value: playlist.tracks.length.toString(), inline: true });
+
+                    if (playlist.thumbnail) {
+                        embed.setThumbnail(playlist.thumbnail);
+                    }
 
                     await interaction.followUp({ embeds: [embed] });
                 } catch (error) {
