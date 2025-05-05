@@ -42,7 +42,10 @@ export const command = {
                         volume: getGuildVolume(interaction.guildId),
                         bufferingTimeout: 3000,
                         leaveOnEmpty: false,
-                        leaveOnEnd: false
+                        leaveOnEnd: false,
+                        leaveOnStop: false,
+                        selfDeaf: true,
+                        skipFFmpeg: false
                     }
                 });
 
