@@ -16,7 +16,7 @@ export const command = {
             const channel = interaction.member.voice.channel;
             if (!channel) {
                 return await interaction.reply({
-                    content: 'Önce bir ses kanalına katılmalısın!',
+                    content: '❌ Önce bir ses kanalına katılmalısın!',
                     ephemeral: true
                 });
             }
@@ -27,7 +27,16 @@ export const command = {
             const query = interaction.options.getString('şarkı', true);
 
             try {
-                const { track } = await player.play(channel, query, {
+                const searchResult = await player.search(query);
+                
+                if (!searchResult.hasTracks()) {
+                    return await interaction.followUp({
+                        content: '❌ Şarkı bulunamadı!',
+                        ephemeral: true
+                    });
+                }
+
+                const { track } = await player.play(channel, searchResult, {
                     nodeOptions: {
                         metadata: interaction.channel,
                         volume: getGuildVolume(interaction.guildId),
