@@ -1,6 +1,7 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { getPlayer } from '../../utils/player.js';
 import { getGuildVolume } from '../../utils/settings.js';
+import play from 'play-dl';
 
 export const command = {
     data: new SlashCommandBuilder()
@@ -21,48 +22,134 @@ export const command = {
                 });
             }
 
-            await interaction.deferReply();
-
-            const player = await getPlayer(interaction.client);
-            const query = interaction.options.getString('şarkı', true);
+            await interaction.deferReply().catch(e => console.error("deferReply hatası:", e));
 
             try {
-                const searchResult = await player.search(query);
+                const player = await getPlayer(interaction.client);
+                const query = interaction.options.getString('şarkı', true);
+
+                console.log(`🔍 "${query}" için arama yapılıyor...`);
                 
-                if (!searchResult.hasTracks()) {
+                let searchResult;
+                let youtubeUrl = null;
+                
+                // YouTube URL kontrolü
+                const isYoutubeUrl = play.yt_validate(query) === 'video';
+                
+                if (isYoutubeUrl) {
+                    console.log("YouTube URL'si tespit edildi, işleniyor...");
+                    youtubeUrl = query;
+                } else {
+                    // URL değilse, play-dl ile arama yap
+                    try {
+                        console.log("URL değil, play-dl ile arama yapılıyor...");
+                        const searchResults = await play.search(query, { limit: 1 });
+                        if (searchResults && searchResults.length > 0) {
+                            youtubeUrl = searchResults[0].url;
+                            console.log(`✅ play-dl ile şarkı bulundu: ${searchResults[0].title}`);
+                        } else {
+                            console.log("⚠️ play-dl ile sonuç bulunamadı, normal arama deneniyor...");
+                        }
+                    } catch (playDlError) {
+                        console.error("play-dl arama hatası:", playDlError);
+                    }
+                }
+                
+                // YouTube URL veya play-dl sonucu varsa, discord-player'a gönder
+                if (youtubeUrl) {
+                    searchResult = await player.search(youtubeUrl, {
+                        requestedBy: interaction.user
+                    });
+                } else {
+                    // Diğer durumda normal Discord Player araması yap
+                    searchResult = await player.search(query, {
+                        requestedBy: interaction.user
+                    });
+                }
+                
+                if (!searchResult || !searchResult.hasTracks()) {
+                    console.log(`❌ "${query}" için şarkı bulunamadı`);
                     return await interaction.followUp({
                         content: '❌ Şarkı bulunamadı!',
                         ephemeral: true
-                    });
+                    }).catch(e => console.error("followUp hatası:", e));
                 }
 
-                const { track } = await player.play(channel, searchResult, {
-                    nodeOptions: {
-                        metadata: interaction.channel,
-                        volume: getGuildVolume(interaction.guildId),
-                        bufferingTimeout: 3000,
-                        leaveOnEmpty: true,
-                        leaveOnEnd: false,
-                        leaveOnStop: true,
-                        selfDeaf: true,
-                        skipFFmpeg: false
-                    }
-                });
+                console.log(`✅ "${query}" için ${searchResult.tracks.length} şarkı bulundu`);
+                
+                try {
+                    const volume = getGuildVolume(interaction.guildId) || 70;
+                    
+                    // GuildQueue oluştur ve track ekle
+                    const { track } = await player.play(channel, searchResult.tracks[0], {
+                        nodeOptions: {
+                            metadata: interaction.channel,
+                            volume: volume,
+                            leaveOnEmpty: true,
+                            leaveOnEmptyCooldown: 300000, // 5 dakika
+                            leaveOnEnd: false,
+                            leaveOnStop: true,
+                            selfDeaf: true
+                        }
+                    });
 
-                return await interaction.followUp(`🎵 **${track.title}** sıraya eklendi!`);
-            } catch (error) {
-                console.error('Çalma hatası:', error);
+                    console.log(`✅ "${track.title}" sıraya eklendi`);
+                    return await interaction.followUp(`🎵 **${track.title}** sıraya eklendi!`)
+                        .catch(e => console.error("followUp hatası:", e));
+                        
+                } catch (playError) {
+                    console.error('Şarkı çalma hatası:', playError);
+                    
+                    // İlk track başarısız olursa ve alternatif varsa, onu dene
+                    if (searchResult.tracks.length > 1) {
+                        try {
+                            console.log(`İlk şarkı çalınamadı, sıradaki şarkı deneniyor...`);
+                            const { track } = await player.play(channel, searchResult.tracks[1], {
+                                nodeOptions: {
+                                    metadata: interaction.channel,
+                                    volume: getGuildVolume(interaction.guildId) || 70,
+                                    leaveOnEmpty: true,
+                                    leaveOnEmptyCooldown: 300000
+                                }
+                            });
+                            
+                            console.log(`✅ "${track.title}" sıraya eklendi (alternatif)`);
+                            return await interaction.followUp(`🎵 **${track.title}** sıraya eklendi!`)
+                                .catch(e => console.error("followUp hatası:", e));
+                        } catch (alternativeError) {
+                            console.error('Alternatif şarkı çalma hatası:', alternativeError);
+                        }
+                    }
+                    
+                    return await interaction.followUp({
+                        content: `❌ Şarkı çalınırken bir hata oluştu. Lütfen başka bir şarkı deneyin.`,
+                        ephemeral: true
+                    }).catch(e => console.error("followUp hatası:", e));
+                }
+            } catch (searchError) {
+                console.error('Arama işlemi hatası:', searchError);
                 return await interaction.followUp({
-                    content: `❌ Bir hata oluştu: ${error.message}`,
+                    content: `❌ ${searchError.message || 'Bir hata oluştu!'}`,
                     ephemeral: true
-                });
+                }).catch(e => console.error("followUp hatası:", e));
             }
-        } catch (error) {
-            console.error('Genel hata:', error);
-            return await interaction.followUp({
-                content: '❌ Bir hata oluştu!',
-                ephemeral: true
-            });
+        } catch (generalError) {
+            console.error('Genel hata:', generalError);
+            try {
+                if (interaction.deferred) {
+                    await interaction.followUp({
+                        content: '❌ Bir hata oluştu!',
+                        ephemeral: true
+                    });
+                } else {
+                    await interaction.reply({
+                        content: '❌ Bir hata oluştu!',
+                        ephemeral: true
+                    });
+                }
+            } catch (replyError) {
+                console.error('Yanıt hatası:', replyError);
+            }
         }
     }
 };
