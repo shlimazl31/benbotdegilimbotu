@@ -8,6 +8,16 @@ let player = null;
 // Her sunucu için zamanlayıcıları tutacak bir harita
 const disconnectTimers = new Map();
 
+// Ses bağlantılarının otomatik yönetimi için bu fonksiyonu kullanalım
+const manageVoiceConnection = (guildId, channel) => {
+    // Eğer bir zamanlayıcı varsa, iptal et
+    if (disconnectTimers.has(guildId)) {
+        clearTimeout(disconnectTimers.get(guildId));
+        disconnectTimers.delete(guildId);
+        console.log(`🔄 ${guildId} için ayrılma zamanlayıcısı iptal edildi`);
+    }
+};
+
 export const getPlayer = async (client) => {
     if (player) return player;
 
@@ -50,13 +60,8 @@ export const getPlayer = async (client) => {
     // Player event'lerini ayarla
     player.events.on('playerStart', (queue, track) => {
         try {
-            // Eğer bir zamanlayıcı varsa, iptal et
-            const guildId = queue.guild.id;
-            if (disconnectTimers.has(guildId)) {
-                clearTimeout(disconnectTimers.get(guildId));
-                disconnectTimers.delete(guildId);
-                console.log(`🔄 ${guildId} için ayrılma zamanlayıcısı iptal edildi`);
-            }
+            // Şarkı çalmaya başladığında bağlantıyı yönet
+            manageVoiceConnection(queue.guild.id, queue.channel);
 
             queue.metadata?.send(`🎵 Şimdi çalıyor: **${track.title}**!`);
             console.log(`🎵 Şarkı çalınıyor: ${track.title}`);
@@ -75,42 +80,56 @@ export const getPlayer = async (client) => {
         queue.metadata?.send('❌ Oynatıcı hatası oluştu! Lütfen başka bir şarkı deneyiniz.');
     });
 
+    // Özel kanaldan ayrılma mekanizması
     player.events.on('emptyQueue', (queue) => {
         try {
             queue.metadata?.send('✅ Sıra bitti!');
             
-            // Bu işlevin emptyQueue event'i içinde süreci başlatmasını garanti altına alıyoruz
-            setTimeout(() => {
-                // 5 dakika sonra kanaldan ayrılmak için zamanlayıcı ayarla
-                const guildId = queue.guild.id;
-                const fiveMinutesInMs = 5 * 60 * 1000;
-
-                console.log(`⏲️ ${guildId} için 5 dakikalık ayrılma zamanlayıcısı başlatıldı`);
-                
-                // Eğer mevcut bir zamanlayıcı varsa, onu temizleyelim
-                if (disconnectTimers.has(guildId)) {
-                    clearTimeout(disconnectTimers.get(guildId));
-                    disconnectTimers.delete(guildId);
-                }
-                
-                const timerId = setTimeout(() => {
-                    try {
-                        const connection = getVoiceConnection(guildId);
-                        if (connection) {
-                            connection.destroy();
-                            queue.metadata?.send('🕒 Son 5 dakikadır hiçbir şarkı çalınmadı, kanaldan ayrılıyorum 👋');
-                            console.log(`👋 ${guildId} için bot ses kanalından ayrıldı (5 dakika inaktif)`);
-                        }
-                        disconnectTimers.delete(guildId);
-                    } catch (error) {
-                        console.error('Bağlantıyı kapatma hatası:', error);
+            const guildId = queue.guild.id;
+            
+            if (disconnectTimers.has(guildId)) {
+                clearTimeout(disconnectTimers.get(guildId));
+            }
+            
+            // Doğrudan bağlantıyı al (bot hala kanalda olmalı)
+            const connection = getVoiceConnection(guildId);
+            
+            if (!connection) {
+                console.log(`⚠️ ${guildId} için ses bağlantısı bulunamadı`);
+                return;
+            }
+            
+            console.log(`⏲️ ${guildId} için 5 dakikalık ayrılma zamanlayıcısı başlatıldı`);
+            
+            // Yeni bir timeout oluştur ve haritada sakla
+            const timerId = setTimeout(() => {
+                try {
+                    // 5 dakika sonra, bağlantıyı tekrar kontrol et ve kapat
+                    const currentConnection = getVoiceConnection(guildId);
+                    if (currentConnection) {
+                        console.log(`⏰ ${guildId} için 5 dakika doldu, kanaldan ayrılıyor`);
+                        queue.metadata?.send('🕒 Son 5 dakikadır hiçbir şarkı çalınmadı, kanaldan ayrılıyorum 👋');
+                        currentConnection.destroy();
                     }
-                }, fiveMinutesInMs);
-
-                disconnectTimers.set(guildId, timerId);
-            }, 100); // Hemen çalışmasını önlemek için kısa bir gecikme
+                    disconnectTimers.delete(guildId);
+                } catch (error) {
+                    console.error('Bağlantıyı kapatma hatası:', error);
+                }
+            }, 5 * 60 * 1000); // 5 dakika
+            
+            disconnectTimers.set(guildId, timerId);
         } catch (error) {
             console.error('emptyQueue event hatası:', error);
+        }
+    });
+    
+    // Yeni event listener'lar ekle
+    player.events.on('queueAdd', (queue) => {
+        try {
+            // Sıraya şarkı eklendiğinde bağlantıyı yönet
+            manageVoiceConnection(queue.guild.id, queue.channel);
+        } catch (error) {
+            console.error('queueAdd event hatası:', error);
         }
     });
     
@@ -124,24 +143,27 @@ export const getPlayer = async (client) => {
         queue.metadata?.send('❌ Ses kanalına bağlanırken bir hata oluştu. Tekrar deneyiniz.');
     });
 
-    player.events.on('connectionDestroyed', (queue) => {
-        console.log(`⚠️ ${queue.guild.id} için ses bağlantısı bozuldu`);
-    });
-    
-    // Manuel olarak odadan ayrılma işlemi
-    player.events.on('disconnect', (queue) => {
-        try {
-            console.log(`🛑 Bot ses kanalından ayrıldı. Guild: ${queue.guild.id}`);
-            // Zamanlayıcıyı iptal et
-            if (disconnectTimers.has(queue.guild.id)) {
-                clearTimeout(disconnectTimers.get(queue.guild.id));
-                disconnectTimers.delete(queue.guild.id);
-                console.log(`🗑️ ${queue.guild.id} için ayrılma zamanlayıcısı temizlendi`);
-            }
-        } catch (error) {
-            console.error('disconnect event hatası:', error);
-        }
-    });
-
     return player;
+};
+
+// Kanaldan manuel çıkma fonksiyonu
+export const leaveVoiceChannel = (guildId) => {
+    try {
+        // Zamanlayıcıyı iptal et
+        if (disconnectTimers.has(guildId)) {
+            clearTimeout(disconnectTimers.get(guildId));
+            disconnectTimers.delete(guildId);
+        }
+        
+        // Bağlantıyı kapat
+        const connection = getVoiceConnection(guildId);
+        if (connection) {
+            connection.destroy();
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.error('Manuel ayrılma hatası:', error);
+        return false;
+    }
 };

@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { getVoiceConnection } from '@discordjs/voice';
+import { leaveVoiceChannel } from '../../utils/player.js';
 
 export const command = {
     data: new SlashCommandBuilder()
@@ -15,23 +15,15 @@ export const command = {
                 });
             }
 
-            const connection = getVoiceConnection(interaction.guild.id);
-            console.log('Bağlantı durumu:', connection); // Hata ayıklama için log
+            // Özel leave fonksiyonumuzu kullanalım
+            const success = leaveVoiceChannel(interaction.guild.id);
+            console.log('Leave komutu çalıştırıldı, sonuç:', success); // Hata ayıklama için log
 
-            if (!connection) {
+            if (success) {
+                return await interaction.reply('👋 Ses kanalından ayrıldım!');
+            } else {
                 return await interaction.reply({
                     content: '❌ Şu anda bir ses kanalında değilim!',
-                    ephemeral: true
-                });
-            }
-
-            try {
-                connection.destroy();
-                return await interaction.reply('👋 Ses kanalından ayrıldım!');
-            } catch (destroyError) {
-                console.error('Bağlantıyı kapatma hatası:', destroyError);
-                return await interaction.reply({
-                    content: '❌ Ses kanalından ayrılırken bir hata oluştu!',
                     ephemeral: true
                 });
             }
