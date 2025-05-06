@@ -85,7 +85,11 @@ export const command = {
                         nodeOptions: {
                             metadata: interaction.channel,
                             volume: volume,
-                            selfDeaf: true
+                            selfDeaf: true,
+                            // Bot kanalda kalsın için connection options
+                            leaveOnEmpty: false,
+                            leaveOnEnd: false,
+                            leaveOnStop: false
                         }
                     });
 
@@ -104,7 +108,11 @@ export const command = {
                                 nodeOptions: {
                                     metadata: interaction.channel,
                                     volume: getGuildVolume(interaction.guildId) || 70,
-                                    selfDeaf: true
+                                    selfDeaf: true,
+                                    // Bot kanalda kalsın için connection options
+                                    leaveOnEmpty: false,
+                                    leaveOnEnd: false,
+                                    leaveOnStop: false
                                 }
                             });
                             
