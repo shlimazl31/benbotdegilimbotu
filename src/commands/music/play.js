@@ -41,9 +41,9 @@ export const command = {
                         metadata: interaction.channel,
                         volume: getGuildVolume(interaction.guildId),
                         bufferingTimeout: 3000,
-                        leaveOnEmpty: false,
+                        leaveOnEmpty: true,
                         leaveOnEnd: false,
-                        leaveOnStop: false,
+                        leaveOnStop: true,
                         selfDeaf: true,
                         skipFFmpeg: false
                     }

@@ -16,16 +16,25 @@ export const command = {
             }
 
             const connection = getVoiceConnection(interaction.guild.id);
-            
+            console.log('Bağlantı durumu:', connection); // Hata ayıklama için log
+
             if (!connection) {
                 return await interaction.reply({
-                    content: '❌ Zaten bir ses kanalında değilim!',
+                    content: '❌ Şu anda bir ses kanalında değilim!',
                     ephemeral: true
                 });
             }
 
-            connection.destroy();
-            return await interaction.reply('👋 Ses kanalından ayrıldım!');
+            try {
+                connection.destroy();
+                return await interaction.reply('👋 Ses kanalından ayrıldım!');
+            } catch (destroyError) {
+                console.error('Bağlantıyı kapatma hatası:', destroyError);
+                return await interaction.reply({
+                    content: '❌ Ses kanalından ayrılırken bir hata oluştu!',
+                    ephemeral: true
+                });
+            }
         } catch (error) {
             console.error('Leave komutu hatası:', error);
             return await interaction.reply({
