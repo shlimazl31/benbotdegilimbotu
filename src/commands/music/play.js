@@ -85,10 +85,6 @@ export const command = {
                         nodeOptions: {
                             metadata: interaction.channel,
                             volume: volume,
-                            leaveOnEmpty: true,
-                            leaveOnEmptyCooldown: 300000, // 5 dakika
-                            leaveOnEnd: false,
-                            leaveOnStop: true,
                             selfDeaf: true
                         }
                     });
@@ -108,8 +104,7 @@ export const command = {
                                 nodeOptions: {
                                     metadata: interaction.channel,
                                     volume: getGuildVolume(interaction.guildId) || 70,
-                                    leaveOnEmpty: true,
-                                    leaveOnEmptyCooldown: 300000
+                                    selfDeaf: true
                                 }
                             });
                             

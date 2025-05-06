@@ -1,8 +1,12 @@
 import { Player } from 'discord-player';
 import { YoutubeiExtractor } from 'discord-player-youtubei';
 import play from 'play-dl';
+import { getVoiceConnection } from '@discordjs/voice';
 
 let player = null;
+
+// Her sunucu için zamanlayıcıları tutacak bir harita
+const disconnectTimers = new Map();
 
 export const getPlayer = async (client) => {
     if (player) return player;
@@ -14,11 +18,7 @@ export const getPlayer = async (client) => {
             dlChunkSize: 0
         },
         connectionOptions: {
-            selfDeaf: true,
-            leaveOnEmpty: true,
-            leaveOnEmptyCooldown: 300000, // 5 dakika
-            leaveOnEnd: false,
-            leaveOnStop: true
+            selfDeaf: true
         }
     });
 
@@ -50,6 +50,14 @@ export const getPlayer = async (client) => {
     // Player event'lerini ayarla
     player.events.on('playerStart', (queue, track) => {
         try {
+            // Eğer bir zamanlayıcı varsa, iptal et
+            const guildId = queue.guild.id;
+            if (disconnectTimers.has(guildId)) {
+                clearTimeout(disconnectTimers.get(guildId));
+                disconnectTimers.delete(guildId);
+                console.log(`🔄 ${guildId} için ayrılma zamanlayıcısı iptal edildi`);
+            }
+
             queue.metadata?.send(`🎵 Şimdi çalıyor: **${track.title}**!`);
             console.log(`🎵 Şarkı çalınıyor: ${track.title}`);
         } catch (error) {
@@ -68,8 +76,33 @@ export const getPlayer = async (client) => {
     });
 
     player.events.on('emptyQueue', (queue) => {
-        queue.metadata?.send('✅ Sıra bitti!');
-        console.log(`⏲️ Sıra bitti, 5 dakika sonra kanaldan ayrılacak.`);
+        try {
+            queue.metadata?.send('✅ Sıra bitti!');
+            
+            // 5 dakika sonra kanaldan ayrılmak için zamanlayıcı ayarla
+            const guildId = queue.guild.id;
+            const fiveMinutesInMs = 5 * 60 * 1000;
+
+            console.log(`⏲️ ${guildId} için 5 dakikalık ayrılma zamanlayıcısı başlatıldı`);
+            
+            const timerId = setTimeout(() => {
+                try {
+                    const connection = getVoiceConnection(guildId);
+                    if (connection) {
+                        connection.destroy();
+                        queue.metadata?.send('🕒 Son 5 dakikadır hiçbir şarkı çalınmadı, kanaldan ayrılıyorum 👋');
+                        console.log(`👋 ${guildId} için bot ses kanalından ayrıldı (5 dakika inaktif)`);
+                    }
+                    disconnectTimers.delete(guildId);
+                } catch (error) {
+                    console.error('Bağlantıyı kapatma hatası:', error);
+                }
+            }, fiveMinutesInMs);
+
+            disconnectTimers.set(guildId, timerId);
+        } catch (error) {
+            console.error('emptyQueue event hatası:', error);
+        }
     });
     
     // Debug mesajlarını etkinleştir
