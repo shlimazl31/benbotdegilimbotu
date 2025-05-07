@@ -52,7 +52,7 @@ function startDisconnectChecker() {
                 const connection = getVoiceConnection(guildId);
                 if (!connection) {
                     // Bağlantı yoksa temizle
-                    lastActivityTime.delete(guildId);
+                    clearQueueState(guildId);
                     continue;
                 }
                 
@@ -69,7 +69,7 @@ function startDisconnectChecker() {
                                 .setTitle('⏰ Otomatik Ayrılma')
                                 .setDescription('Son 5 dakikadır hiçbir şarkı çalınmadı, kanaldan ayrılıyorum 👋')
                                 .setColor('#FF0000');
-                            node.queue.metadata.send({ embeds: [embed] })
+                            node.queue.metadata.channel.send({ embeds: [embed] })
                                 .catch(e => console.error('Mesaj gönderme hatası:', e));
                         }
                         
@@ -78,7 +78,7 @@ function startDisconnectChecker() {
                             try {
                                 connection.destroy();
                                 console.log(`👋 ${guildId} için bot ses kanalından ayrıldı (5 dakika inaktif)`);
-                                lastActivityTime.delete(guildId);
+                                clearQueueState(guildId);
                             } catch (error) {
                                 console.error('Bağlantı kapatma hatası:', error);
                             }
@@ -86,7 +86,7 @@ function startDisconnectChecker() {
                     } catch (error) {
                         console.error('Mesaj gönderme veya bağlantı kapatma hatası:', error);
                         connection.destroy();  // Yine de bağlantıyı kapatmaya çalış
-                        lastActivityTime.delete(guildId);
+                        clearQueueState(guildId);
                     }
                 }
             }
@@ -263,7 +263,7 @@ export async function getPlayer(client) {
                 });
 
             // Yeni mesajı gönder ve kaydet
-            queue.metadata?.send({ embeds: [embed] }).then(message => {
+            queue.metadata?.channel.send({ embeds: [embed] }).then(message => {
                 lastNowPlayingMessages.set(queue.guild.id, message);
             });
             
@@ -298,7 +298,7 @@ export async function getPlayer(client) {
                     text: `${track.requestedBy.tag} tarafından eklendi`,
                     iconURL: track.requestedBy.displayAvatarURL()
                 });
-            queue.metadata?.send({ embeds: [embed] });
+            queue.metadata?.channel.send({ embeds: [embed] });
             
             // Sıraya şarkı eklendiğinde aktivite zamanını güncelle
             updateActivityTime(queue.guild.id);
@@ -314,7 +314,7 @@ export async function getPlayer(client) {
             .setTitle('❌ Bağlantı Hatası')
             .setDescription('Ses kanalına bağlanırken bir hata oluştu. Lütfen tekrar deneyiniz.')
             .setColor('#FF0000');
-        queue.metadata?.send({ embeds: [embed] });
+        queue.metadata?.channel.send({ embeds: [embed] });
     });
 
     console.log('✅ Discord Player başlatıldı');
