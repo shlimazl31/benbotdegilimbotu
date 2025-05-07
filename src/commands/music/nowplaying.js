@@ -223,8 +223,12 @@ export const command = {
 
 // Yardımcı fonksiyonlar
 function createProgressBar(progress) {
+    if (!progress || isNaN(progress) || progress < 0 || progress > 1) {
+        progress = 0;
+    }
+    
     const length = 12;
-    const filled = Math.round(length * progress);
+    const filled = Math.max(0, Math.min(length, Math.round(length * progress)));
     const empty = length - filled;
     
     const filledBar = '▬'.repeat(filled);
