@@ -4,31 +4,6 @@ import { getPlayer } from '../../utils/player.js';
 // Her sunucu için son nowplaying mesajını tutacak Map
 const lastNowPlayingMessages = new Map();
 
-function createProgressBar(progress) {
-    if (!progress || isNaN(progress) || progress < 0 || progress > 1) {
-        progress = 0;
-    }
-    
-    const length = 12;
-    const filled = Math.max(0, Math.min(length, Math.round(length * progress)));
-    const empty = length - filled;
-    
-    const filledBar = '▬'.repeat(filled);
-    const emptyBar = '▬'.repeat(empty);
-    
-    return `${filledBar}🔘${emptyBar}`;
-}
-
-function formatTime(ms) {
-    if (!ms || isNaN(ms)) return '00:00';
-    
-    const totalSeconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-}
-
 export const command = {
     data: new SlashCommandBuilder()
         .setName('nowplaying')
@@ -71,29 +46,23 @@ export const command = {
             else if (title.includes('jazz')) color = '#8B4513';
             else if (title.includes('electronic') || title.includes('edm')) color = '#00FFFF';
 
-            const progress = queue.node.getTimestamp();
-            const progressPercent = progress?.current && track?.durationMS 
-                ? progress.current / track.durationMS 
-                : 0;
-
-            const currentTime = formatTime(progress?.current || 0);
-            const totalTime = formatTime(track?.durationMS || 0);
-            const progressBar = createProgressBar(progressPercent);
+            const progress = queue.node.createProgressBar();
+            const timestamp = queue.node.getTimestamp();
 
             const embed = new EmbedBuilder()
                 .setTitle('🎵 Şimdi Çalıyor')
                 .setDescription(`**${track.title}**`)
                 .addFields(
-                    { name: '👤 Sanatçı', value: track.author || 'Bilinmiyor', inline: true },
-                    { name: '⏱️ Süre', value: totalTime, inline: true },
+                    { name: '👤 Sanatçı', value: track.author, inline: true },
+                    { name: '⏱️ Süre', value: track.duration, inline: true },
                     { name: '🔊 Ses', value: `${queue.node.volume}%`, inline: true },
-                    { name: '📊 İlerleme', value: `${currentTime} ┃ ${progressBar} ┃ ${totalTime}`, inline: false }
+                    { name: '📊 İlerleme', value: progress, inline: false }
                 )
                 .setThumbnail(track.thumbnail)
                 .setColor(color)
                 .setFooter({ 
-                    text: `İsteyen: ${track.requestedBy?.tag || interaction.user.tag}`,
-                    iconURL: track.requestedBy?.displayAvatarURL() || interaction.user.displayAvatarURL()
+                    text: `İsteyen: ${track.requestedBy.tag}`,
+                    iconURL: track.requestedBy.displayAvatarURL()
                 });
 
             // Kontrol butonları
@@ -258,29 +227,23 @@ export const command = {
                         return;
                     }
 
-                    const progress = currentQueue.node.getTimestamp();
-                    const progressPercent = progress?.current && currentTrack?.durationMS 
-                        ? progress.current / currentTrack.durationMS 
-                        : 0;
-
-                    const currentTime = formatTime(progress?.current || 0);
-                    const totalTime = formatTime(currentTrack?.durationMS || 0);
-                    const progressBar = createProgressBar(progressPercent);
+                    const progress = currentQueue.node.createProgressBar();
+                    const timestamp = currentQueue.node.getTimestamp();
 
                     const updatedEmbed = new EmbedBuilder()
                         .setTitle('🎵 Şimdi Çalıyor')
                         .setDescription(`**${currentTrack.title}**`)
                         .addFields(
-                            { name: '👤 Sanatçı', value: currentTrack.author || 'Bilinmiyor', inline: true },
-                            { name: '⏱️ Süre', value: totalTime, inline: true },
+                            { name: '👤 Sanatçı', value: currentTrack.author, inline: true },
+                            { name: '⏱️ Süre', value: currentTrack.duration, inline: true },
                             { name: '🔊 Ses', value: `${currentQueue.node.volume}%`, inline: true },
-                            { name: '📊 İlerleme', value: `${currentTime} ┃ ${progressBar} ┃ ${totalTime}`, inline: false }
+                            { name: '📊 İlerleme', value: progress, inline: false }
                         )
                         .setThumbnail(currentTrack.thumbnail)
                         .setColor(color)
                         .setFooter({ 
-                            text: `İsteyen: ${currentTrack.requestedBy?.tag || interaction.user.tag}`,
-                            iconURL: currentTrack.requestedBy?.displayAvatarURL() || interaction.user.displayAvatarURL()
+                            text: `İsteyen: ${currentTrack.requestedBy.tag}`,
+                            iconURL: currentTrack.requestedBy.displayAvatarURL()
                         });
 
                     await message.edit({
