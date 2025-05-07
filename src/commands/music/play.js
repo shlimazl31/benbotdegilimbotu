@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
-import { getPlayer } from '../../utils/player.js';
+import { getPlayer, checkQueueState } from '../../utils/player.js';
 
 export const command = {
     data: new SlashCommandBuilder()
@@ -39,6 +39,9 @@ export const command = {
                 const query = interaction.options.getString('şarkı', true);
                 const player = await getPlayer(interaction.client);
 
+                // Mevcut queue durumunu kontrol et
+                const queueState = checkQueueState(interaction.guildId);
+                
                 // Queue oluştur veya al
                 let queue = player.nodes.get(interaction.guildId);
                 if (!queue) {
@@ -47,6 +50,7 @@ export const command = {
                             channel: interaction.channel,
                             client: interaction.client,
                             requestedBy: interaction.user,
+                            guildId: interaction.guildId
                         },
                         selfDeaf: true,
                         volume: 80,

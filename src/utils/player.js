@@ -12,6 +12,30 @@ const disconnectTimers = new Map();
 const lastActivityTime = new Map();
 // Son "Şimdi Çalıyor" mesajlarını tutacak harita
 const lastNowPlayingMessages = new Map();
+// Her sunucu için queue durumunu tutacak harita
+const queueStates = new Map();
+
+// Queue durumunu güncelle
+function updateQueueState(guildId, state) {
+    queueStates.set(guildId, {
+        ...queueStates.get(guildId),
+        ...state,
+        lastUpdate: Date.now()
+    });
+}
+
+// Queue durumunu al
+function getQueueState(guildId) {
+    return queueStates.get(guildId);
+}
+
+// Queue durumunu temizle
+function clearQueueState(guildId) {
+    queueStates.delete(guildId);
+    lastActivityTime.delete(guildId);
+    lastNowPlayingMessages.delete(guildId);
+    disconnectTimers.delete(guildId);
+}
 
 // Ses bağlantılarını yönetmek için düzenli kontrol
 function startDisconnectChecker() {
@@ -109,6 +133,9 @@ export async function getPlayer(client) {
                 .setColor('#FF0000');
             queue.metadata.channel.send({ embeds: [embed] }).catch(console.error);
         }
+        
+        // Queue durumunu güncelle
+        updateQueueState(queue.guild.id, { error: true, errorMessage: error.message });
     });
 
     player.events.on('playerError', (queue, error) => {
@@ -138,6 +165,13 @@ export async function getPlayer(client) {
     player.events.on('emptyQueue', (queue) => {
         console.log(`🔵 Sıra bitti [${queue.guild.name}]`);
         
+        // Queue durumunu güncelle
+        updateQueueState(queue.guild.id, {
+            isPlaying: false,
+            queueSize: 0,
+            currentTrack: null
+        });
+        
         if (queue.metadata?.channel) {
             const embed = new EmbedBuilder()
                 .setTitle('✅ Sıra Bitti')
@@ -149,6 +183,9 @@ export async function getPlayer(client) {
 
     player.events.on('disconnect', (queue) => {
         console.log(`🔵 Bağlantı kesildi [${queue.guild.name}]`);
+        
+        // Queue durumunu temizle
+        clearQueueState(queue.guild.id);
         
         if (queue.metadata?.channel) {
             const embed = new EmbedBuilder()
@@ -193,6 +230,13 @@ export async function getPlayer(client) {
             // Şarkı çalmaya başladığında aktivite zamanını güncelle
             updateActivityTime(queue.guild.id);
             
+            // Queue durumunu güncelle
+            updateQueueState(queue.guild.id, {
+                isPlaying: true,
+                currentTrack: track,
+                lastUpdate: Date.now()
+            });
+            
             // Önceki mesajı sil
             const lastMessage = lastNowPlayingMessages.get(queue.guild.id);
             if (lastMessage) {
@@ -232,7 +276,14 @@ export async function getPlayer(client) {
     // Sıraya şarkı eklendiğinde
     player.events.on('queueAdd', (queue) => {
         try {
-            const track = queue.tracks.at(-1); // En son eklenen şarkı
+            const track = queue.tracks.at(-1);
+            
+            // Queue durumunu güncelle
+            updateQueueState(queue.guild.id, {
+                queueSize: queue.tracks.size,
+                lastAddedTrack: track
+            });
+            
             const embed = new EmbedBuilder()
                 .setTitle('➕ Şarkı Eklendi')
                 .setDescription(`**${track.title}**`)
@@ -268,6 +319,16 @@ export async function getPlayer(client) {
 
     console.log('✅ Discord Player başlatıldı');
     return player;
+}
+
+// Queue durumunu kontrol et
+export function checkQueueState(guildId) {
+    return getQueueState(guildId);
+}
+
+// Queue durumunu temizle
+export function resetQueueState(guildId) {
+    clearQueueState(guildId);
 }
 
 // Kanaldan manuel çıkma fonksiyonu

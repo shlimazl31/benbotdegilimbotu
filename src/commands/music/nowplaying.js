@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
-import { getPlayer } from '../../utils/player.js';
+import { getPlayer, checkQueueState } from '../../utils/player.js';
 
 // Her sunucu için son nowplaying mesajını tutacak Map
 const lastNowPlayingMessages = new Map();
@@ -19,8 +19,9 @@ export const command = {
 
             const player = await getPlayer(interaction.client);
             const queue = player.nodes.get(interaction.guildId);
+            const queueState = checkQueueState(interaction.guildId);
 
-            if (!queue || !queue.isPlaying()) {
+            if (!queue || !queue.isPlaying() || !queueState?.isPlaying) {
                 return await interaction.reply({
                     content: '❌ Şu anda çalan bir şarkı yok!',
                     ephemeral: true
@@ -113,7 +114,9 @@ export const command = {
                 }
 
                 const queue = player.nodes.get(i.guildId);
-                if (!queue) {
+                const queueState = checkQueueState(i.guildId);
+                
+                if (!queue || !queueState?.isPlaying) {
                     return await i.reply({
                         content: '❌ Şu anda çalan bir şarkı yok!',
                         ephemeral: true
@@ -216,7 +219,9 @@ export const command = {
             const updateInterval = setInterval(async () => {
                 try {
                     const currentQueue = player.nodes.get(interaction.guildId);
-                    if (!currentQueue || !currentQueue.isPlaying()) {
+                    const currentQueueState = checkQueueState(interaction.guildId);
+                    
+                    if (!currentQueue || !currentQueue.isPlaying() || !currentQueueState?.isPlaying) {
                         clearInterval(updateInterval);
                         return;
                     }
@@ -248,25 +253,20 @@ export const command = {
 
                     await message.edit({
                         embeds: [updatedEmbed]
-                    });
+                    }).catch(() => {});
                 } catch (error) {
-                    console.error('Mesaj güncelleme hatası:', error);
+                    console.error('🔴 Nowplaying güncelleme hatası:', error);
                     clearInterval(updateInterval);
                 }
             }, 10000);
 
-            // 15 dakika sonra güncellemeyi durdur
-            setTimeout(() => {
-                clearInterval(updateInterval);
-            }, 15 * 60 * 1000);
-
         } catch (error) {
-            console.error('Nowplaying hatası:', error);
-            if (!interaction.replied && !interaction.deferred) {
+            console.error('🔴 Nowplaying komutu hatası:', error);
+            if (!interaction.replied) {
                 await interaction.reply({
                     content: '❌ Bir hata oluştu!',
                     ephemeral: true
-                });
+                }).catch(() => {});
             }
         }
     }
