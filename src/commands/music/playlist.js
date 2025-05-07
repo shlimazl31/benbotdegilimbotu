@@ -4,24 +4,14 @@ import { getPlayer } from '../../utils/player.js';
 export const command = {
     data: new SlashCommandBuilder()
         .setName('playlist')
-        .setDescription('Playlist işlemleri')
+        .setDescription('Playlist komutları')
         .addSubcommand(subcommand =>
             subcommand
                 .setName('play')
-                .setDescription('Bir playlist çalar')
+                .setDescription('Bir playlist\'i çalar')
                 .addStringOption(option =>
-                    option
-                        .setName('url')
-                        .setDescription('Playlist URL (YouTube/Spotify)')
-                        .setRequired(true)))
-        .addSubcommand(subcommand =>
-            subcommand
-                .setName('info')
-                .setDescription('Playlist bilgilerini gösterir')
-                .addStringOption(option =>
-                    option
-                        .setName('url')
-                        .setDescription('Playlist URL')
+                    option.setName('url')
+                        .setDescription('Playlist URL\'si')
                         .setRequired(true))),
 
     async execute(interaction) {
@@ -30,10 +20,11 @@ export const command = {
             const channel = interaction.member.voice.channel;
 
             if (!channel) {
-                return await interaction.reply({
-                    content: '❌ Önce bir ses kanalına katılmalısın!',
-                    ephemeral: true
-                });
+                const embed = new EmbedBuilder()
+                    .setTitle('❌ Ses Kanalı Gerekli')
+                    .setDescription('Önce bir ses kanalına katılmalısın!')
+                    .setColor('#FF0000');
+                return await interaction.reply({ embeds: [embed], ephemeral: true });
             }
 
             await interaction.deferReply();
@@ -54,64 +45,39 @@ export const command = {
 
                     const playlist = track.playlist;
                     if (!playlist) {
-                        return await interaction.followUp('❌ Bu geçerli bir playlist değil!');
+                        const embed = new EmbedBuilder()
+                            .setTitle('❌ Geçersiz Playlist')
+                            .setDescription('Bu geçerli bir playlist değil!')
+                            .setColor('#FF0000');
+                        return await interaction.followUp({ embeds: [embed], ephemeral: true });
                     }
-
-                    return await interaction.followUp(
-                        `🎵 **${playlist.title}** playlistinden **${playlist.tracks.length}** şarkı sıraya eklendi!`
-                    );
-                } catch (error) {
-                    console.error('Playlist çalma hatası:', error);
-                    return await interaction.followUp({
-                        content: `❌ Playlist yüklenirken bir hata oluştu: ${error.message}`,
-                        ephemeral: true
-                    });
-                }
-            } else if (subcommand === 'info') {
-                try {
-                    const result = await player.search(url);
-                    
-                    if (!result.playlist) {
-                        return await interaction.followUp('❌ Bu geçerli bir playlist değil!');
-                    }
-
-                    const playlist = result.playlist;
-                    const tracks = playlist.tracks.slice(0, 10);
 
                     const embed = new EmbedBuilder()
-                        .setTitle(`📑 ${playlist.title}`)
-                        .setDescription(
-                            tracks.map((track, i) => `${i + 1}. **${track.title}**`).join('\n') +
-                            (playlist.tracks.length > 10 ? `\n\n...ve ${playlist.tracks.length - 10} şarkı daha` : '')
+                        .setTitle('🎵 Playlist Eklendi')
+                        .setDescription(`**${playlist.title}** playlistinden **${playlist.tracks.length}** şarkı sıraya eklendi!`)
+                        .addFields(
+                            { name: '📋 Playlist Adı', value: playlist.title, inline: true },
+                            { name: '🎵 Şarkı Sayısı', value: playlist.tracks.length.toString(), inline: true }
                         )
-                        .setColor('#FF0000');
-
-                    // Güvenli bir şekilde alanları ekle
-                    if (playlist.author) {
-                        embed.addFields({ name: '👤 Oluşturan', value: playlist.author.toString(), inline: true });
-                    }
-                    
-                    embed.addFields({ name: '🎵 Toplam Şarkı', value: playlist.tracks.length.toString(), inline: true });
-
-                    if (playlist.thumbnail) {
-                        embed.setThumbnail(playlist.thumbnail);
-                    }
-
-                    await interaction.followUp({ embeds: [embed] });
+                        .setThumbnail(playlist.thumbnail)
+                        .setColor('#00FF00');
+                    return await interaction.followUp({ embeds: [embed] });
                 } catch (error) {
-                    console.error('Playlist bilgi hatası:', error);
-                    return await interaction.followUp({
-                        content: `❌ Playlist bilgisi alınırken bir hata oluştu: ${error.message}`,
-                        ephemeral: true
-                    });
+                    console.error('Playlist çalma hatası:', error);
+                    const embed = new EmbedBuilder()
+                        .setTitle('❌ Hata')
+                        .setDescription(`Playlist yüklenirken bir hata oluştu: ${error.message}`)
+                        .setColor('#FF0000');
+                    return await interaction.followUp({ embeds: [embed], ephemeral: true });
                 }
             }
         } catch (error) {
-            console.error('Genel playlist hatası:', error);
-            return await interaction.followUp({
-                content: '❌ Bir hata oluştu!',
-                ephemeral: true
-            });
+            console.error('Playlist komutu hatası:', error);
+            const embed = new EmbedBuilder()
+                .setTitle('❌ Hata')
+                .setDescription('Bir hata oluştu!')
+                .setColor('#FF0000');
+            return await interaction.followUp({ embeds: [embed], ephemeral: true });
         }
     }
 }; 

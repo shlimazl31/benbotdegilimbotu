@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { getPlayer } from '../../utils/player.js';
 import { getGuildSetting, setGuildSetting } from '../../utils/guildSettings.js';
 
@@ -10,17 +10,16 @@ export const command = {
     async execute(interaction) {
         try {
             if (!interaction.member.voice.channel) {
-                return await interaction.reply({
-                    content: '❌ Önce bir ses kanalına katılmalısın!',
-                    ephemeral: true
-                });
+                const embed = new EmbedBuilder()
+                    .setTitle('❌ Ses Kanalı Gerekli')
+                    .setDescription('Önce bir ses kanalına katılmalısın!')
+                    .setColor('#FF0000');
+                return await interaction.reply({ embeds: [embed], ephemeral: true });
             }
 
             const mode247 = getGuildSetting(interaction.guildId, '247');
             const newMode = !mode247;
-            
             setGuildSetting(interaction.guildId, '247', newMode);
-            
             const player = await getPlayer(interaction.client);
             const queue = player.nodes.get(interaction.guildId);
 
@@ -39,25 +38,35 @@ export const command = {
                         });
                     } catch (error) {
                         console.error('Ses kanalına katılma hatası:', error);
-                        return await interaction.reply({
-                            content: '❌ Ses kanalına katılırken bir hata oluştu!',
-                            ephemeral: true
-                        });
+                        const embed = new EmbedBuilder()
+                            .setTitle('❌ Katılım Hatası')
+                            .setDescription('Ses kanalına katılırken bir hata oluştu!')
+                            .setColor('#FF0000');
+                        return await interaction.reply({ embeds: [embed], ephemeral: true });
                     }
                 }
-                return await interaction.reply('✅ 24/7 modu açıldı! Artık ses kanalından çıkmayacağım.');
+                const embed = new EmbedBuilder()
+                    .setTitle('✅ 24/7 Modu Açıldı')
+                    .setDescription('24/7 modu açıldı! Artık ses kanalından çıkmayacağım.')
+                    .setColor('#00C851');
+                return await interaction.reply({ embeds: [embed] });
             } else {
                 if (queue && !queue.currentTrack) {
                     await queue.delete();
                 }
-                return await interaction.reply('✅ 24/7 modu kapatıldı! Müzik bitince kanaldan çıkacağım.');
+                const embed = new EmbedBuilder()
+                    .setTitle('✅ 24/7 Modu Kapatıldı')
+                    .setDescription('24/7 modu kapatıldı! Müzik bitince kanaldan çıkacağım.')
+                    .setColor('#00C851');
+                return await interaction.reply({ embeds: [embed] });
             }
         } catch (error) {
             console.error('247 komutu hatası:', error);
-            return await interaction.reply({
-                content: '❌ Bir hata oluştu!',
-                ephemeral: true
-            });
+            const embed = new EmbedBuilder()
+                .setTitle('❌ Hata')
+                .setDescription('Bir hata oluştu!')
+                .setColor('#FF0000');
+            return await interaction.reply({ embeds: [embed], ephemeral: true });
         }
     }
 }; 

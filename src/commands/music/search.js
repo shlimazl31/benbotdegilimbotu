@@ -13,10 +13,11 @@ export const command = {
     async execute(interaction) {
         try {
             if (!interaction.member.voice.channel) {
-                return await interaction.reply({
-                    content: '❌ Önce bir ses kanalına katılmalısın!',
-                    ephemeral: true
-                });
+                const embed = new EmbedBuilder()
+                    .setTitle('❌ Ses Kanalı Gerekli')
+                    .setDescription('Önce bir ses kanalına katılmalısın!')
+                    .setColor('#FF0000');
+                return await interaction.reply({ embeds: [embed], ephemeral: true });
             }
 
             const query = interaction.options.getString('query');
@@ -24,83 +25,106 @@ export const command = {
             
             await interaction.deferReply();
 
-            try {
-                const results = await player.search(query);
-                if (!results.tracks.length) {
-                    return await interaction.followUp('❌ Sonuç bulunamadı!');
+            const searchResult = await player.search(query, {
+                searchEngine: 'youtube'
+            });
+
+            if (!searchResult || !searchResult.hasTracks()) {
+                const embed = new EmbedBuilder()
+                    .setTitle('❌ Sonuç Bulunamadı')
+                    .setDescription(`"${query}" için sonuç bulunamadı!`)
+                    .setColor('#FF0000');
+                return await interaction.followUp({ embeds: [embed], ephemeral: true });
+            }
+
+            const tracks = searchResult.tracks.slice(0, 10);
+            const selectMenu = new StringSelectMenuBuilder()
+                .setCustomId('search-select')
+                .setPlaceholder('Bir şarkı seçin')
+                .addOptions(tracks.map((track, index) => ({
+                    label: track.title.length > 100 ? track.title.substring(0, 97) + '...' : track.title,
+                    description: track.author,
+                    value: index.toString()
+                })));
+
+            const row = new ActionRowBuilder().addComponents(selectMenu);
+
+            const embed = new EmbedBuilder()
+                .setTitle('🔍 Arama Sonuçları')
+                .setDescription(`"${query}" için bulunan sonuçlar:`)
+                .addFields(
+                    tracks.map((track, index) => ({
+                        name: `${index + 1}. ${track.title}`,
+                        value: `👤 ${track.author} | ⏱️ ${track.duration}`
+                    }))
+                )
+                .setColor('#00FF00')
+                .setFooter({ text: 'Bir şarkı seçmek için aşağıdaki menüyü kullanın' });
+
+            const message = await interaction.followUp({
+                embeds: [embed],
+                components: [row]
+            });
+
+            const collector = message.createMessageComponentCollector({
+                time: 30000
+            });
+
+            collector.on('collect', async (i) => {
+                if (i.user.id !== interaction.user.id) {
+                    return await i.reply({
+                        content: '❌ Bu menüyü sadece komutu kullanan kişi kullanabilir!',
+                        ephemeral: true
+                    });
                 }
 
-                const tracks = results.tracks.slice(0, 10); // İlk 10 sonuç
-                const selectMenu = new StringSelectMenuBuilder()
-                    .setCustomId('song-select')
-                    .setPlaceholder('Bir şarkı seç')
-                    .addOptions(tracks.map((track, i) => ({
-                        label: track.title.slice(0, 100),
-                        description: track.author.slice(0, 100),
-                        value: i.toString()
-                    })));
+                const selectedTrack = tracks[parseInt(i.values[0])];
+                const channel = interaction.member.voice.channel;
 
-                const row = new ActionRowBuilder().addComponents(selectMenu);
-
-                const embed = new EmbedBuilder()
-                    .setTitle('🔍 Arama Sonuçları')
-                    .setDescription(tracks.map((t, i) => `${i + 1}. ${t.title} - ${t.author}`).join('\n'))
-                    .setColor('#FF0000');
-
-                const response = await interaction.followUp({
-                    embeds: [embed],
-                    components: [row]
-                });
-
-                const collector = response.createMessageComponentCollector({
-                    time: 30000 // 30 saniye
-                });
-
-                collector.on('collect', async i => {
-                    if (i.user.id !== interaction.user.id) {
-                        return await i.reply({
-                            content: '❌ Bu menüyü sadece komutu kullanan kişi kullanabilir!',
-                            ephemeral: true
-                        });
-                    }
-
-                    const track = tracks[parseInt(i.values[0])];
-                    await player.play(interaction.member.voice.channel, track, {
+                try {
+                    await player.play(channel, selectedTrack, {
                         nodeOptions: {
-                            metadata: interaction
+                            metadata: interaction.channel,
+                            volume: 80,
+                            leaveOnEmpty: false,
+                            leaveOnEnd: false
                         }
                     });
 
-                    await i.update({
-                        content: `🎵 **${track.title}** sıraya eklendi!`,
-                        embeds: [],
-                        components: []
-                    });
-                });
+                    const successEmbed = new EmbedBuilder()
+                        .setTitle('🎵 Şarkı Eklendi')
+                        .setDescription(`**${selectedTrack.title}** sıraya eklendi!`)
+                        .addFields(
+                            { name: '👤 Sanatçı', value: selectedTrack.author, inline: true },
+                            { name: '⏱️ Süre', value: selectedTrack.duration, inline: true }
+                        )
+                        .setThumbnail(selectedTrack.thumbnail)
+                        .setColor('#00FF00');
 
-                collector.on('end', async (collected, reason) => {
-                    if (reason === 'time' && collected.size === 0) {
-                        await interaction.editReply({
-                            content: '❌ Süre doldu!',
-                            embeds: [],
-                            components: []
-                        });
-                    }
-                });
+                    await i.update({ embeds: [successEmbed], components: [] });
+                } catch (error) {
+                    console.error('Şarkı çalma hatası:', error);
+                    const errorEmbed = new EmbedBuilder()
+                        .setTitle('❌ Hata')
+                        .setDescription('Şarkı çalınırken bir hata oluştu!')
+                        .setColor('#FF0000');
+                    await i.update({ embeds: [errorEmbed], components: [] });
+                }
+            });
 
-            } catch (error) {
-                console.error('Search hatası:', error);
-                return await interaction.followUp({
-                    content: '❌ Arama sırasında bir hata oluştu!',
-                    ephemeral: true
-                });
-            }
+            collector.on('end', async () => {
+                if (!message.deleted) {
+                    await message.edit({ components: [] }).catch(() => {});
+                }
+            });
+
         } catch (error) {
             console.error('Search komutu hatası:', error);
-            return await interaction.reply({
-                content: '❌ Bir hata oluştu!',
-                ephemeral: true
-            });
+            const errorEmbed = new EmbedBuilder()
+                .setTitle('❌ Hata')
+                .setDescription('Bir hata oluştu!')
+                .setColor('#FF0000');
+            return await interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
         }
     }
 }; 

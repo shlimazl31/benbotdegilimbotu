@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { getPlayer } from '../../utils/player.js';
 
 export const command = {
@@ -9,46 +9,47 @@ export const command = {
     async execute(interaction) {
         try {
             if (!interaction.guild) {
-                return await interaction.reply({
-                    content: '❌ Bu komut sadece sunucularda kullanılabilir!',
-                    ephemeral: true
-                });
+                const embed = new EmbedBuilder()
+                    .setTitle('❌ Sunucu Gerekli')
+                    .setDescription('Bu komut sadece sunucularda kullanılabilir!')
+                    .setColor('#FF0000');
+                return await interaction.reply({ embeds: [embed], ephemeral: true });
             }
 
             const player = await getPlayer(interaction.client);
             const queue = player.nodes.get(interaction.guild.id);
 
-            if (!queue) {
-                return await interaction.reply({
-                    content: '❌ Şu anda çalan bir şarkı yok!',
-                    ephemeral: true
-                });
-            }
-
-            if (!queue.isPlaying()) {
-                return await interaction.reply({
-                    content: '❌ Şu anda çalan bir şarkı yok!',
-                    ephemeral: true
-                });
+            if (!queue || !queue.isPlaying()) {
+                const embed = new EmbedBuilder()
+                    .setTitle('❌ Şu Anda Şarkı Yok')
+                    .setDescription('Şu anda çalan bir şarkı yok!')
+                    .setColor('#FF0000');
+                return await interaction.reply({ embeds: [embed], ephemeral: true });
             }
 
             const currentTrack = queue.currentTrack;
             const success = await queue.node.skip();
 
             if (!success) {
-                return await interaction.reply({
-                    content: '❌ Şarkı atlanırken bir hata oluştu!',
-                    ephemeral: true
-                });
+                const embed = new EmbedBuilder()
+                    .setTitle('❌ Atlanamadı')
+                    .setDescription('Şarkı atlanırken bir hata oluştu!')
+                    .setColor('#FF0000');
+                return await interaction.reply({ embeds: [embed], ephemeral: true });
             }
 
-            await interaction.reply(`⏭️ **${currentTrack.title}** atlandı!`);
+            const embed = new EmbedBuilder()
+                .setTitle('⏭️ Şarkı Atlandı')
+                .setDescription(`**${currentTrack.title}** atlandı!`)
+                .setColor('#1976D2');
+            await interaction.reply({ embeds: [embed] });
         } catch (error) {
             console.error('Skip hatası:', error);
-            await interaction.reply({
-                content: '❌ Bir hata oluştu!',
-                ephemeral: true
-            });
+            const embed = new EmbedBuilder()
+                .setTitle('❌ Hata')
+                .setDescription('Bir hata oluştu!')
+                .setColor('#FF0000');
+            await interaction.reply({ embeds: [embed], ephemeral: true });
         }
     }
 };

@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { leaveVoiceChannel } from '../../utils/player.js';
 
 export const command = {
@@ -9,10 +9,11 @@ export const command = {
     async execute(interaction) {
         try {
             if (!interaction.guild) {
-                return await interaction.reply({
-                    content: '❌ Bu komut sadece sunucularda kullanılabilir!',
-                    ephemeral: true
-                });
+                const embed = new EmbedBuilder()
+                    .setTitle('❌ Sunucu Gerekli')
+                    .setDescription('Bu komut sadece sunucularda kullanılabilir!')
+                    .setColor('#FF0000');
+                return await interaction.reply({ embeds: [embed], ephemeral: true });
             }
 
             // Özel leave fonksiyonumuzu kullanalım
@@ -20,19 +21,25 @@ export const command = {
             console.log('Leave komutu çalıştırıldı, sonuç:', success); // Hata ayıklama için log
 
             if (success) {
-                return await interaction.reply('👋 Ses kanalından ayrıldım!');
+                const embed = new EmbedBuilder()
+                    .setTitle('👋 Ayrıldım')
+                    .setDescription('Ses kanalından ayrıldım!')
+                    .setColor('#00C851');
+                return await interaction.reply({ embeds: [embed] });
             } else {
-                return await interaction.reply({
-                    content: '❌ Şu anda bir ses kanalında değilim!',
-                    ephemeral: true
-                });
+                const embed = new EmbedBuilder()
+                    .setTitle('❌ Kanalda Değilim')
+                    .setDescription('Şu anda bir ses kanalında değilim!')
+                    .setColor('#FF0000');
+                return await interaction.reply({ embeds: [embed], ephemeral: true });
             }
         } catch (error) {
             console.error('Leave komutu hatası:', error);
-            return await interaction.reply({
-                content: '❌ Bir hata oluştu!',
-                ephemeral: true
-            });
+            const embed = new EmbedBuilder()
+                .setTitle('❌ Hata')
+                .setDescription('Bir hata oluştu!')
+                .setColor('#FF0000');
+            return await interaction.reply({ embeds: [embed], ephemeral: true });
         }
     }
 }; 

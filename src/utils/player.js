@@ -41,7 +41,11 @@ function startDisconnectChecker() {
                         // Player üzerinden metadataya ulaşmaya çalış
                         const node = player.nodes.get(guildId);
                         if (node && node.queue && node.queue.metadata) {
-                            node.queue.metadata.send('🕒 Son 5 dakikadır hiçbir şarkı çalınmadı, kanaldan ayrılıyorum 👋')
+                            const embed = new EmbedBuilder()
+                                .setTitle('⏰ Otomatik Ayrılma')
+                                .setDescription('Son 5 dakikadır hiçbir şarkı çalınmadı, kanaldan ayrılıyorum 👋')
+                                .setColor('#FF0000');
+                            node.queue.metadata.send({ embeds: [embed] })
                                 .catch(e => console.error('Mesaj gönderme hatası:', e));
                         }
                         

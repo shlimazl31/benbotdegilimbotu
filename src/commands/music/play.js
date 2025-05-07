@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { getPlayer } from '../../utils/player.js';
 import { getGuildVolume } from '../../utils/settings.js';
 import { hasDjRole } from './dj.js';
@@ -17,18 +17,20 @@ export const command = {
         try {
             const channel = interaction.member.voice.channel;
             if (!channel) {
-                return await interaction.reply({
-                    content: '❌ Önce bir ses kanalına katılmalısın!',
-                    ephemeral: true
-                });
+                const embed = new EmbedBuilder()
+                    .setTitle('❌ Ses Kanalı Gerekli')
+                    .setDescription('Önce bir ses kanalına katılmalısın!')
+                    .setColor('#FF0000');
+                return await interaction.reply({ embeds: [embed], ephemeral: true });
             }
 
             // DJ rolü kontrolü
             if (!hasDjRole(interaction.member)) {
-                return await interaction.reply({
-                    content: '❌ Bu komutu kullanmak için DJ rolüne sahip olmalısın!',
-                    ephemeral: true
-                });
+                const embed = new EmbedBuilder()
+                    .setTitle('❌ Yetki Gerekli')
+                    .setDescription('Bu komutu kullanmak için DJ rolüne sahip olmalısın!')
+                    .setColor('#FF0000');
+                return await interaction.reply({ embeds: [embed], ephemeral: true });
             }
 
             await interaction.deferReply().catch(e => console.error("deferReply hatası:", e));
@@ -78,10 +80,11 @@ export const command = {
                 
                 if (!searchResult || !searchResult.hasTracks()) {
                     console.log(`❌ "${query}" için şarkı bulunamadı`);
-                    return await interaction.followUp({
-                        content: '❌ Şarkı bulunamadı!',
-                        ephemeral: true
-                    }).catch(e => console.error("followUp hatası:", e));
+                    const embed = new EmbedBuilder()
+                        .setTitle('❌ Şarkı Bulunamadı')
+                        .setDescription('Aradığın şarkı bulunamadı!')
+                        .setColor('#FF0000');
+                    return await interaction.followUp({ embeds: [embed], ephemeral: true }).catch(e => console.error("followUp hatası:", e));
                 }
 
                 console.log(`✅ "${query}" için ${searchResult.tracks.length} şarkı bulundu`);
@@ -103,8 +106,12 @@ export const command = {
                     });
 
                     console.log(`✅ "${track.title}" sıraya eklendi`);
-                    return await interaction.followUp(`🎵 **${track.title}** sıraya eklendi!`)
-                        .catch(e => console.error("followUp hatası:", e));
+                    const embed = new EmbedBuilder()
+                        .setTitle('🎵 Sıraya Eklendi')
+                        .setDescription(`**${track.title}** sıraya eklendi!`)
+                        .setThumbnail(track.thumbnail)
+                        .setColor('#00C851');
+                    return await interaction.followUp({ embeds: [embed] }).catch(e => console.error("followUp hatası:", e));
                         
                 } catch (playError) {
                     console.error('Şarkı çalma hatası:', playError);
@@ -126,31 +133,38 @@ export const command = {
                             });
                             
                             console.log(`✅ "${track.title}" sıraya eklendi (alternatif)`);
-                            return await interaction.followUp(`🎵 **${track.title}** sıraya eklendi!`)
-                                .catch(e => console.error("followUp hatası:", e));
+                            const embed = new EmbedBuilder()
+                                .setTitle('🎵 Sıraya Eklendi (Alternatif)')
+                                .setDescription(`**${track.title}** sıraya eklendi!`)
+                                .setThumbnail(track.thumbnail)
+                                .setColor('#00C851');
+                            return await interaction.followUp({ embeds: [embed] }).catch(e => console.error("followUp hatası:", e));
                         } catch (alternativeError) {
                             console.error('Alternatif şarkı çalma hatası:', alternativeError);
                         }
                     }
                     
-                    return await interaction.followUp({
-                        content: `❌ Şarkı çalınırken bir hata oluştu. Lütfen başka bir şarkı deneyin.`,
-                        ephemeral: true
-                    }).catch(e => console.error("followUp hatası:", e));
+                    const embed = new EmbedBuilder()
+                        .setTitle('❌ Şarkı Çalınamadı')
+                        .setDescription('Şarkı çalınırken bir hata oluştu. Lütfen başka bir şarkı deneyin.')
+                        .setColor('#FF0000');
+                    return await interaction.followUp({ embeds: [embed], ephemeral: true }).catch(e => console.error("followUp hatası:", e));
                 }
             } catch (error) {
                 console.error('Play komutu hatası:', error);
-                await interaction.followUp({
-                    content: '❌ Bir hata oluştu!',
-                    ephemeral: true
-                });
+                const embed = new EmbedBuilder()
+                    .setTitle('❌ Hata')
+                    .setDescription('Bir hata oluştu!')
+                    .setColor('#FF0000');
+                await interaction.followUp({ embeds: [embed], ephemeral: true });
             }
         } catch (error) {
             console.error('Play komutu hatası:', error);
-            await interaction.reply({
-                content: '❌ Bir hata oluştu!',
-                ephemeral: true
-            });
+            const embed = new EmbedBuilder()
+                .setTitle('❌ Hata')
+                .setDescription('Bir hata oluştu!')
+                .setColor('#FF0000');
+            await interaction.reply({ embeds: [embed], ephemeral: true });
         }
     }
 };

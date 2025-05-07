@@ -1,4 +1,4 @@
-import { Events } from 'discord.js';
+import { Events, EmbedBuilder } from 'discord.js';
 
 export const event = {
     name: Events.PlayerStateUpdate,
@@ -9,7 +9,11 @@ export const event = {
             if (oldState.status === 'ready' && newState.status === 'disconnected') {
                 const channel = queue.metadata;
                 if (channel) {
-                    await channel.send('🎵 10 dakika boyunca müzik çalmadığım için kanaldan ayrıldım!');
+                    const embed = new EmbedBuilder()
+                        .setTitle('👋 Otomatik Ayrılma')
+                        .setDescription('10 dakika boyunca müzik çalmadığım için kanaldan ayrıldım!')
+                        .setColor('#FF0000');
+                    await channel.send({ embeds: [embed] });
                 }
             }
         } catch (error) {
