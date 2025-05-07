@@ -68,10 +68,17 @@ export const command = {
                         name: '👮 Moderasyon Komutları',
                         value:
                         '`/purge` - Belirtilen sayıda mesajı siler (1-100)'
+                    },
+                    {
+                        name: '🎧 DJ Sistemi',
+                        value:
+                        '`/dj ayarla` - DJ rolünü ayarlar\n' +
+                        '`/dj kaldır` - DJ rolünü kaldırır\n' +
+                        '`/dj bilgi` - DJ rolü bilgilerini gösterir'
                     }
                 )
                 .setColor('#FF0000')
-                .setFooter({ text: 'Daha fazla özellik yakında! | github.com/shlimazl31' });
+                .setFooter({ text: 'v2.0.0 | github.com/shlimazl31' });
 
             return await interaction.reply({ embeds: [embed] });
         } catch (error) {

@@ -1,6 +1,7 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { getPlayer } from '../../utils/player.js';
 import { getGuildVolume } from '../../utils/settings.js';
+import { hasDjRole } from './dj.js';
 import play from 'play-dl';
 
 export const command = {
@@ -18,6 +19,14 @@ export const command = {
             if (!channel) {
                 return await interaction.reply({
                     content: '❌ Önce bir ses kanalına katılmalısın!',
+                    ephemeral: true
+                });
+            }
+
+            // DJ rolü kontrolü
+            if (!hasDjRole(interaction.member)) {
+                return await interaction.reply({
+                    content: '❌ Bu komutu kullanmak için DJ rolüne sahip olmalısın!',
                     ephemeral: true
                 });
             }
@@ -129,30 +138,19 @@ export const command = {
                         ephemeral: true
                     }).catch(e => console.error("followUp hatası:", e));
                 }
-            } catch (searchError) {
-                console.error('Arama işlemi hatası:', searchError);
-                return await interaction.followUp({
-                    content: `❌ ${searchError.message || 'Bir hata oluştu!'}`,
+            } catch (error) {
+                console.error('Play komutu hatası:', error);
+                await interaction.followUp({
+                    content: '❌ Bir hata oluştu!',
                     ephemeral: true
-                }).catch(e => console.error("followUp hatası:", e));
+                });
             }
-        } catch (generalError) {
-            console.error('Genel hata:', generalError);
-            try {
-                if (interaction.deferred) {
-                    await interaction.followUp({
-                        content: '❌ Bir hata oluştu!',
-                        ephemeral: true
-                    });
-                } else {
-                    await interaction.reply({
-                        content: '❌ Bir hata oluştu!',
-                        ephemeral: true
-                    });
-                }
-            } catch (replyError) {
-                console.error('Yanıt hatası:', replyError);
-            }
+        } catch (error) {
+            console.error('Play komutu hatası:', error);
+            await interaction.reply({
+                content: '❌ Bir hata oluştu!',
+                ephemeral: true
+            });
         }
     }
 };
