@@ -242,8 +242,8 @@ export const command = {
                         .setThumbnail(currentTrack.thumbnail)
                         .setColor(color)
                         .setFooter({ 
-                            text: track.requestedBy ? `İsteyen: ${track.requestedBy.tag}` : 'İsteyen: Bilinmiyor',
-                            iconURL: track.requestedBy?.displayAvatarURL() || interaction.client.user.displayAvatarURL()
+                            text: currentTrack.requestedBy ? `İsteyen: ${currentTrack.requestedBy.tag}` : 'İsteyen: Bilinmiyor',
+                            iconURL: currentTrack.requestedBy?.displayAvatarURL() || interaction.client.user.displayAvatarURL()
                         });
 
                     await message.edit({
