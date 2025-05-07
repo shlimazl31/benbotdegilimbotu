@@ -7,6 +7,9 @@ import { config } from 'dotenv';
 import { REST, Routes } from 'discord.js';
 import { webcrypto } from 'node:crypto';
 import { getPlayer } from './src/utils/player.js';
+import express from 'express';
+import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 
 // crypto için global polyfill
 if (!globalThis.crypto) {
@@ -164,3 +167,101 @@ async function initializePlayer(client) {
 // Bot başlatma ve giriş
 await initializePlayer(client);
 client.login(process.env.TOKEN);
+
+// Express sunucusu oluştur
+const app = express();
+const port = process.env.PORT || 3000;
+
+// Rate limiter ayarları
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 dakika
+    max: 100 // IP başına limit
+});
+
+// CORS ayarları
+app.use(cors({
+    origin: process.env.CORS_ORIGIN || 'https://benbotdegilim.online',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
+}));
+
+app.use(express.json());
+app.use(limiter);
+
+// Bot durumu endpoint'i
+app.get('/api/bot/status', (req, res) => {
+    res.json({
+        status: 'online',
+        uptime: client.uptime,
+        guilds: client.guilds.cache.size,
+        ping: client.ws.ping
+    });
+});
+
+// Sunucular endpoint'i
+app.get('/api/bot/guilds', (req, res) => {
+    const guilds = client.guilds.cache.map(guild => ({
+        id: guild.id,
+        name: guild.name,
+        memberCount: guild.memberCount,
+        icon: guild.iconURL()
+    }));
+    res.json(guilds);
+});
+
+// Müzik kontrolü endpoint'i
+app.post('/api/bot/music/:guildId/:action', async (req, res) => {
+    const { guildId, action } = req.params;
+    const guild = client.guilds.cache.get(guildId);
+    
+    if (!guild) {
+        return res.status(404).json({ error: 'Sunucu bulunamadı' });
+    }
+
+    const player = getPlayer(client);
+    const queue = player.nodes.get(guildId);
+
+    try {
+        switch (action) {
+            case 'play':
+                // Müzik çalma işlemleri
+                break;
+            case 'pause':
+                if (queue) queue.node.pause();
+                break;
+            case 'resume':
+                if (queue) queue.node.resume();
+                break;
+            case 'stop':
+                if (queue) queue.delete();
+                break;
+            default:
+                return res.status(400).json({ error: 'Geçersiz işlem' });
+        }
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Sunucu ayarları endpoint'i
+app.get('/api/bot/guilds/:guildId/settings', (req, res) => {
+    const { guildId } = req.params;
+    const guild = client.guilds.cache.get(guildId);
+    
+    if (!guild) {
+        return res.status(404).json({ error: 'Sunucu bulunamadı' });
+    }
+
+    // Sunucu ayarlarını döndür
+    res.json({
+        id: guild.id,
+        name: guild.name,
+        // Diğer ayarlar buraya eklenecek
+    });
+});
+
+// Sunucuyu başlat
+app.listen(port, () => {
+    console.log(`API sunucusu ${port} portunda çalışıyor`);
+});
