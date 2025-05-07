@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { EmbedBuilder } from 'discord.js';
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { useMainPlayer } from 'discord-player';
 import { Client } from 'genius-lyrics';
 
@@ -22,10 +22,7 @@ export const command = {
             await interaction.reply({ embeds: [loadingEmbed] });
 
             // Genius client'ı oluştur
-            const genius = new Client({
-                clientId: process.env.GENIUS_CLIENT_ID,
-                clientSecret: process.env.GENIUS_CLIENT_SECRET
-            });
+            const genius = new Client(process.env.GENIUS_TOKEN);
 
             // Şarkı adını al
             let query = interaction.options.getString('query');
@@ -40,7 +37,7 @@ export const command = {
                         .setTitle('❌ Hata')
                         .setDescription('Şu anda çalan bir şarkı yok! Lütfen bir şarkı adı belirtin.')
                         .setColor('#FF0000');
-                    return interaction.editReply({ embeds: [errorEmbed] });
+                    return await interaction.editReply({ embeds: [errorEmbed] });
                 }
 
                 query = `${queue.currentTrack.title} ${queue.currentTrack.author}`;
@@ -54,7 +51,7 @@ export const command = {
                         .setTitle('❌ Hata')
                         .setDescription('Şarkı sözleri bulunamadı!')
                         .setColor('#FF0000');
-                    return interaction.editReply({ embeds: [errorEmbed] });
+                    return await interaction.editReply({ embeds: [errorEmbed] });
                 }
 
                 // İlk sonucu al
@@ -183,11 +180,22 @@ export const command = {
 
         } catch (error) {
             console.error('Lyrics komutu hatası:', error);
-            const errorEmbed = new EmbedBuilder()
-                .setTitle('❌ Sistem Hatası')
-                .setDescription('Bir hata oluştu! Lütfen daha sonra tekrar deneyin.')
-                .setColor('#FF0000');
-            await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+            
+            // Eğer etkileşim henüz yanıtlanmamışsa
+            if (!interaction.replied && !interaction.deferred) {
+                const errorEmbed = new EmbedBuilder()
+                    .setTitle('❌ Sistem Hatası')
+                    .setDescription('Bir hata oluştu! Lütfen daha sonra tekrar deneyin.')
+                    .setColor('#FF0000');
+                await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+            } else {
+                // Etkileşim zaten yanıtlanmışsa, mesajı düzenle
+                const errorEmbed = new EmbedBuilder()
+                    .setTitle('❌ Sistem Hatası')
+                    .setDescription('Bir hata oluştu! Lütfen daha sonra tekrar deneyin.')
+                    .setColor('#FF0000');
+                await interaction.editReply({ embeds: [errorEmbed] });
+            }
         }
     }
 };
