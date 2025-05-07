@@ -61,8 +61,8 @@ export const command = {
                 .setThumbnail(track.thumbnail)
                 .setColor(color)
                 .setFooter({ 
-                    text: `İsteyen: ${track.requestedBy.tag}`,
-                    iconURL: track.requestedBy.displayAvatarURL()
+                    text: track.requestedBy ? `İsteyen: ${track.requestedBy.tag}` : 'İsteyen: Bilinmiyor',
+                    iconURL: track.requestedBy?.displayAvatarURL() || interaction.client.user.displayAvatarURL()
                 });
 
             // Kontrol butonları
@@ -242,8 +242,8 @@ export const command = {
                         .setThumbnail(currentTrack.thumbnail)
                         .setColor(color)
                         .setFooter({ 
-                            text: `İsteyen: ${currentTrack.requestedBy.tag}`,
-                            iconURL: currentTrack.requestedBy.displayAvatarURL()
+                            text: track.requestedBy ? `İsteyen: ${track.requestedBy.tag}` : 'İsteyen: Bilinmiyor',
+                            iconURL: track.requestedBy?.displayAvatarURL() || interaction.client.user.displayAvatarURL()
                         });
 
                     await message.edit({
