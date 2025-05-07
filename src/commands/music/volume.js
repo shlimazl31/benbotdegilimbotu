@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { getPlayer } from '../../utils/player.js';
 import { getGuildVolume, setGuildVolume } from '../../utils/settings.js';
 
@@ -21,8 +21,12 @@ export const command = {
             const queue = player.nodes.get(interaction.guildId);
 
             if (!queue || !queue.isPlaying()) {
+                const errorEmbed = new EmbedBuilder()
+                    .setColor('#FF0000')
+                    .setDescription('❌ Şu anda çalan bir şarkı yok!');
+                
                 return await interaction.followUp({
-                    content: '❌ Şu anda çalan bir şarkı yok!',
+                    embeds: [errorEmbed],
                     ephemeral: true
                 });
             }
@@ -33,11 +37,21 @@ export const command = {
             // Ses seviyesini kaydet
             setGuildVolume(interaction.guildId, volume);
 
-            return await interaction.followUp(`🔊 Ses seviyesi **${volume}%** olarak ayarlandı!`);
+            const volumeEmbed = new EmbedBuilder()
+                .setColor('#00FF00')
+                .setDescription(`🔊 Ses seviyesi **${volume}%** olarak ayarlandı!`)
+                .setFooter({ text: `${interaction.user.tag} tarafından ayarlandı` })
+                .setTimestamp();
+
+            return await interaction.followUp({ embeds: [volumeEmbed] });
         } catch (error) {
             console.error('Volume hatası:', error);
+            const errorEmbed = new EmbedBuilder()
+                .setColor('#FF0000')
+                .setDescription('❌ Bir hata oluştu!');
+            
             return await interaction.followUp({
-                content: '❌ Bir hata oluştu!',
+                embeds: [errorEmbed],
                 ephemeral: true
             });
         }

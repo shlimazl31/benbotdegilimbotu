@@ -6,7 +6,7 @@ const SETTINGS_FILE = 'guildSettings.json';
 const defaultSettings = {
     autoplay: false,
     '247': false,
-    volume: 100
+    volume: 50
 };
 
 // Ayarları yükle
