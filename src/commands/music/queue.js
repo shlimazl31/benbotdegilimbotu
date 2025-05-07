@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { getPlayer } from '../../utils/player.js';
 
 export const command = {
@@ -18,85 +18,101 @@ export const command = {
                 });
             }
 
+            // Her sayfada 10 şarkı göster
+            const tracksPerPage = 10;
+            const totalPages = Math.ceil(queue.tracks.size / tracksPerPage);
+            let currentPage = 0;
+
+            // Sayfalama butonları
+            const buttons = new ActionRowBuilder()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId('first')
+                        .setLabel('⏮️ İlk')
+                        .setStyle(ButtonStyle.Primary),
+                    new ButtonBuilder()
+                        .setCustomId('prev')
+                        .setLabel('◀️ Önceki')
+                        .setStyle(ButtonStyle.Secondary),
+                    new ButtonBuilder()
+                        .setCustomId('next')
+                        .setLabel('▶️ Sonraki')
+                        .setStyle(ButtonStyle.Secondary),
+                    new ButtonBuilder()
+                        .setCustomId('last')
+                        .setLabel('⏭️ Son')
+                        .setStyle(ButtonStyle.Primary)
+                );
+
+            // Sayfa oluşturma fonksiyonu
+            const generatePage = (page) => {
+                const start = page * tracksPerPage;
+                const end = start + tracksPerPage;
+                const tracks = queue.tracks.toArray().slice(start, end);
+
+                const embed = new EmbedBuilder()
+                    .setTitle('📋 Şarkı Sırası')
+                    .setDescription(
+                        `**Şu An Çalıyor:**\n` +
+                        `🎵 **${queue.currentTrack.title}** - ${queue.currentTrack.author}\n\n` +
+                        `**Sıradaki Şarkılar:**\n` +
+                        tracks.map((track, i) => 
+                            `${start + i + 1}. **${track.title}** - ${track.author}`
+                        ).join('\n')
+                    )
+                    .setColor('#FF0000')
+                    .setFooter({ 
+                        text: `Sayfa ${page + 1}/${totalPages} • Toplam ${queue.tracks.size} şarkı`,
+                        iconURL: interaction.guild.iconURL()
+                    });
+
+                return embed;
+            };
+
             // İlk mesajı gönder
             const message = await interaction.reply({ 
-                content: '📋 Şarkı sırası yükleniyor...',
+                embeds: [generatePage(currentPage)],
+                components: [buttons],
                 fetchReply: true 
             });
 
-            // Her 15 saniyede bir güncelle
-            const updateInterval = setInterval(async () => {
-                try {
-                    // Eğer sıra yoksa veya çalma durduysa güncellemeyi durdur
-                    if (!queue.isPlaying()) {
-                        clearInterval(updateInterval);
-                        return;
-                    }
+            // Buton etkileşimlerini dinle
+            const collector = message.createMessageComponentCollector({ 
+                time: 5 * 60 * 1000 // 5 dakika
+            });
 
-                    const currentTrack = queue.currentTrack;
-                    const tracks = queue.tracks.toArray();
-
-                    // Toplam süreyi hesapla
-                    const totalDuration = tracks.reduce((acc, track) => acc + track.durationMS, currentTrack.durationMS);
-                    const formatDuration = (ms) => {
-                        const seconds = Math.floor(ms / 1000);
-                        const minutes = Math.floor(seconds / 60);
-                        const hours = Math.floor(minutes / 60);
-                        return hours > 0 
-                            ? `${hours}:${minutes % 60}:${seconds % 60}`
-                            : `${minutes}:${seconds % 60}`;
-                    };
-
-                    // Şu an çalan şarkının ilerleme çubuğu
-                    const progress = queue.node.createProgressBar();
-                    const timestamp = queue.node.getTimestamp();
-                    const progressBar = progress
-                        .replace('─', '▬')
-                        .replace('●', '🔘')
-                        .replace('○', '▬');
-
-                    let description = `**Şu An Çalıyor:**\n🎵 ${currentTrack.title} - ${currentTrack.author}\n${progressBar}\n\n`;
-
-                    if (tracks.length === 0) {
-                        description += '*Sırada başka şarkı yok*';
-                    } else {
-                        description += `**Sıradaki Şarkılar:**\n`;
-                        const trackList = tracks
-                            .slice(0, 10)
-                            .map((track, i) => `${i + 1}. ${track.title} - ${track.author}`)
-                            .join('\n');
-                        
-                        description += trackList;
-                        
-                        if (tracks.length > 10) {
-                            description += `\n\n*ve ${tracks.length - 10} şarkı daha...*`;
-                        }
-                    }
-
-                    const embed = new EmbedBuilder()
-                        .setTitle('📋 Şarkı Sırası')
-                        .setDescription(description)
-                        .addFields(
-                            { name: '⏱️ Toplam Süre', value: formatDuration(totalDuration), inline: true },
-                            { name: '🎵 Toplam Şarkı', value: `${tracks.length + 1}`, inline: true },
-                            { name: '🔄 Tekrar Modu', value: queue.repeatMode ? 'Açık' : 'Kapalı', inline: true }
-                        )
-                        .setColor('#FF0000')
-                        .setFooter({ 
-                            text: `Sayfa 1/1 • ${interaction.guild.name} • Otomatik güncelleniyor...`,
-                            iconURL: interaction.guild.iconURL()
-                        });
-
-                    await message.edit({ embeds: [embed] });
-                } catch (error) {
-                    console.error('Queue güncelleme hatası:', error);
-                    clearInterval(updateInterval);
+            collector.on('collect', async (i) => {
+                if (i.user.id !== interaction.user.id) {
+                    return i.reply({ 
+                        content: '❌ Bu butonları sadece komutu kullanan kişi kullanabilir!', 
+                        ephemeral: true 
+                    });
                 }
-            }, 15000); // 15 saniyede bir güncelle
 
-            // 5 dakika sonra güncellemeyi durdur
+                switch (i.customId) {
+                    case 'first':
+                        currentPage = 0;
+                        break;
+                    case 'prev':
+                        currentPage = Math.max(0, currentPage - 1);
+                        break;
+                    case 'next':
+                        currentPage = Math.min(totalPages - 1, currentPage + 1);
+                        break;
+                    case 'last':
+                        currentPage = totalPages - 1;
+                        break;
+                }
+
+                await i.update({ 
+                    embeds: [generatePage(currentPage)],
+                    components: [buttons]
+                });
+            });
+
+            // 5 dakika sonra butonları kaldır
             setTimeout(() => {
-                clearInterval(updateInterval);
+                message.edit({ components: [] }).catch(() => {});
             }, 5 * 60 * 1000);
 
         } catch (error) {

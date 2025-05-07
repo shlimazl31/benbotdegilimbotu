@@ -78,7 +78,7 @@ export const command = {
                     }
                 )
                 .setColor('#FF0000')
-                .setFooter({ text: 'v2.0.0 | github.com/shlimazl31' });
+                .setFooter({ text: 'v2.0.2 | github.com/shlimazl31' });
 
             return await interaction.reply({ embeds: [embed] });
         } catch (error) {
