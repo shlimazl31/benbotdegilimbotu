@@ -8,7 +8,7 @@ export const command = {
         .setName('play')
         .setDescription('Bir şarkı çalar')
         .addStringOption(option =>
-            option.setName('query')
+            option.setName('şarkı')
                 .setDescription('Şarkı adı veya URL')
                 .setRequired(true)),
 
