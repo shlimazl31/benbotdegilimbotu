@@ -77,17 +77,85 @@ function updateActivityTime(guildId) {
     lastActivityTime.set(guildId, Date.now());
 }
 
-export const getPlayer = async (client) => {
+export async function getPlayer(client) {
     if (player) return player;
 
+    // play-dl'i yapılandır
+    await play.setToken({
+        spotify: {
+            client_id: process.env.SPOTIFY_CLIENT_ID,
+            client_secret: process.env.SPOTIFY_CLIENT_SECRET,
+            refresh_token: process.env.SPOTIFY_REFRESH_TOKEN,
+            market: 'TR'
+        }
+    });
+
+    // Player'ı oluştur
     player = new Player(client, {
         ytdlOptions: {
             quality: 'highestaudio',
-            highWaterMark: 1 << 25,
-            dlChunkSize: 0
-        },
-        connectionOptions: {
-            selfDeaf: true
+            highWaterMark: 1 << 25
+        }
+    });
+
+    // Hata yönetimi
+    player.events.on('error', (queue, error) => {
+        console.error(`🔴 Player hatası [${queue.guild.name}]:`, error);
+        
+        if (queue.metadata?.channel) {
+            const embed = new EmbedBuilder()
+                .setTitle('❌ Oynatma Hatası')
+                .setDescription('Müzik çalınırken bir hata oluştu!')
+                .setColor('#FF0000');
+            queue.metadata.channel.send({ embeds: [embed] }).catch(console.error);
+        }
+    });
+
+    player.events.on('playerError', (queue, error) => {
+        console.error(`🔴 Bağlantı hatası [${queue.guild.name}]:`, error);
+        
+        if (queue.metadata?.channel) {
+            const embed = new EmbedBuilder()
+                .setTitle('❌ Bağlantı Hatası')
+                .setDescription('Ses bağlantısında bir sorun oluştu!')
+                .setColor('#FF0000');
+            queue.metadata.channel.send({ embeds: [embed] }).catch(console.error);
+        }
+    });
+
+    player.events.on('emptyChannel', (queue) => {
+        console.log(`🔵 Boş kanal [${queue.guild.name}]: Bot kanaldan ayrılıyor`);
+        
+        if (queue.metadata?.channel) {
+            const embed = new EmbedBuilder()
+                .setTitle('👋 Görüşürüz!')
+                .setDescription('Ses kanalı 5 dakika boş kaldığı için ayrılıyorum.')
+                .setColor('#FFA500');
+            queue.metadata.channel.send({ embeds: [embed] }).catch(console.error);
+        }
+    });
+
+    player.events.on('emptyQueue', (queue) => {
+        console.log(`🔵 Sıra bitti [${queue.guild.name}]`);
+        
+        if (queue.metadata?.channel) {
+            const embed = new EmbedBuilder()
+                .setTitle('✅ Sıra Bitti')
+                .setDescription('Tüm şarkılar çalındı!')
+                .setColor('#00FF00');
+            queue.metadata.channel.send({ embeds: [embed] }).catch(console.error);
+        }
+    });
+
+    player.events.on('disconnect', (queue) => {
+        console.log(`🔵 Bağlantı kesildi [${queue.guild.name}]`);
+        
+        if (queue.metadata?.channel) {
+            const embed = new EmbedBuilder()
+                .setTitle('🔌 Bağlantı Kesildi')
+                .setDescription('Ses kanalı bağlantısı kesildi!')
+                .setColor('#FFA500');
+            queue.metadata.channel.send({ embeds: [embed] }).catch(console.error);
         }
     });
 
@@ -161,41 +229,6 @@ export const getPlayer = async (client) => {
         }
     });
     
-    player.events.on('error', (queue, error) => {
-        console.error('Player hatası:', error);
-        const embed = new EmbedBuilder()
-            .setTitle('❌ Hata Oluştu')
-            .setDescription('Şarkı çalınırken bir hata oluştu. Lütfen tekrar deneyiniz.')
-            .setColor('#FF0000');
-        queue.metadata?.send({ embeds: [embed] });
-    });
-
-    player.events.on('playerError', (queue, error) => {
-        console.error('Player hatası:', error);
-        const embed = new EmbedBuilder()
-            .setTitle('❌ Oynatıcı Hatası')
-            .setDescription('Oynatıcıda bir hata oluştu. Lütfen başka bir şarkı deneyiniz.')
-            .setColor('#FF0000');
-        queue.metadata?.send({ embeds: [embed] });
-    });
-
-    // Sıra bittiğinde
-    player.events.on('emptyQueue', (queue) => {
-        try {
-            const embed = new EmbedBuilder()
-                .setTitle('✅ Sıra Bitti')
-                .setDescription('Tüm şarkılar çalındı!')
-                .setColor('#00FF00');
-            queue.metadata?.send({ embeds: [embed] });
-            
-            // Sıra bittiğinde son aktivite zamanını güncelle
-            updateActivityTime(queue.guild.id);
-            console.log(`⏱️ ${queue.guild.id} için emptyQueue olayında son aktivite zamanı güncellendi`);
-        } catch (error) {
-            console.error('emptyQueue event hatası:', error);
-        }
-    });
-    
     // Sıraya şarkı eklendiğinde
     player.events.on('queueAdd', (queue) => {
         try {
@@ -235,7 +268,7 @@ export const getPlayer = async (client) => {
 
     console.log('✅ Discord Player başlatıldı');
     return player;
-};
+}
 
 // Kanaldan manuel çıkma fonksiyonu
 export const leaveVoiceChannel = (guildId) => {
