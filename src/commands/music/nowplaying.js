@@ -3,7 +3,7 @@ import { checkQueueState, setLastNowPlayingMessage, clearLastNowPlayingMessage, 
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { useMainPlayer } from 'discord-player';
 
-export default {
+export const command = {
     data: new SlashCommandBuilder()
         .setName('nowplaying')
         .setDescription('Şu anda çalan şarkıyı gösterir'),

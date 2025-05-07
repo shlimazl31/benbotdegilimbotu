@@ -3,7 +3,7 @@ import { getPlayer, checkQueueState, updateQueueState, updateActivityTime, canAd
 import { EmbedBuilder } from 'discord.js';
 import { useMainPlayer } from 'discord-player';
 
-export default {
+export const command = {
     data: new SlashCommandBuilder()
         .setName('play')
         .setDescription('Bir şarkı çalar')
