@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { getPlayer } from '../../utils/player.js';
 
-// Kullanıcıların son nowplaying mesajlarını tutacak Map
+// Her sunucu için son nowplaying mesajını tutacak Map
 const lastNowPlayingMessages = new Map();
 
 export const command = {
@@ -11,6 +11,12 @@ export const command = {
 
     async execute(interaction) {
         try {
+            // Önceki nowplaying mesajını sil
+            const lastMsg = lastNowPlayingMessages.get(interaction.guildId);
+            if (lastMsg) {
+                try { await lastMsg.delete().catch(() => {}); } catch {}
+            }
+
             const player = await getPlayer(interaction.client);
             const queue = player.nodes.get(interaction.guildId);
 
@@ -89,6 +95,9 @@ export const command = {
                 components: [row],
                 fetchReply: true
             });
+
+            // Son mesajı kaydet
+            lastNowPlayingMessages.set(interaction.guildId, message);
 
             // Buton etkileşimlerini topla
             const collector = message.createMessageComponentCollector({
