@@ -5,7 +5,7 @@ import { checkQueueState, updateQueueState } from '../../utils/player.js';
 
 export const command = {
     data: new SlashCommandBuilder()
-        .setName('play')
+        .setName('play-music')
         .setDescription('Bir şarkı çalar')
         .addStringOption(option =>
             option.setName('şarkı')
@@ -40,7 +40,7 @@ export const command = {
                 .setColor('#FFA500');
             await interaction.reply({ embeds: [loadingEmbed] });
 
-            const query = interaction.options.getString('query');
+            const query = interaction.options.getString('şarkı');
             const player = useMainPlayer();
             const queue = player.nodes.get(interaction.guild.id);
 

@@ -7,7 +7,7 @@ export const command = {
         .setDescription('Playlist komutları')
         .addSubcommand(subcommand =>
             subcommand
-                .setName('play')
+                .setName('playlist-play')
                 .setDescription('Bir playlist\'i çalar')
                 .addStringOption(option =>
                     option.setName('url')
@@ -32,7 +32,7 @@ export const command = {
             const subcommand = interaction.options.getSubcommand();
             const url = interaction.options.getString('url');
 
-            if (subcommand === 'play') {
+            if (subcommand === 'playlist-play') {
                 try {
                     const { track, queue } = await player.play(channel, url, {
                         nodeOptions: {
