@@ -10,6 +10,8 @@ let player = null;
 const disconnectTimers = new Map();
 // Son aktivite zamanını tutacak harita
 const lastActivityTime = new Map();
+// Son "Şimdi Çalıyor" mesajlarını tutacak harita
+const lastNowPlayingMessages = new Map();
 
 // Ses bağlantılarını yönetmek için düzenli kontrol
 function startDisconnectChecker() {
@@ -119,6 +121,16 @@ export const getPlayer = async (client) => {
             // Şarkı çalmaya başladığında aktivite zamanını güncelle
             updateActivityTime(queue.guild.id);
             
+            // Önceki mesajı sil
+            const lastMessage = lastNowPlayingMessages.get(queue.guild.id);
+            if (lastMessage) {
+                try {
+                    lastMessage.delete().catch(() => {});
+                } catch (error) {
+                    console.error('Önceki mesaj silinirken hata:', error);
+                }
+            }
+
             const embed = new EmbedBuilder()
                 .setTitle('🎵 Şimdi Çalıyor')
                 .setDescription(`**${track.title}**`)
@@ -134,7 +146,11 @@ export const getPlayer = async (client) => {
                     iconURL: track.requestedBy.displayAvatarURL()
                 });
 
-            queue.metadata?.send({ embeds: [embed] });
+            // Yeni mesajı gönder ve kaydet
+            queue.metadata?.send({ embeds: [embed] }).then(message => {
+                lastNowPlayingMessages.set(queue.guild.id, message);
+            });
+            
             console.log(`🎵 Şarkı çalınıyor: ${track.title}`);
         } catch (error) {
             console.error('playerStart event hatası:', error);
