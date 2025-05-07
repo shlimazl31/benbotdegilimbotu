@@ -1,145 +1,151 @@
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
-import { getPlayer, checkQueueState } from '../../utils/player.js';
+import { SlashCommandBuilder } from 'discord.js';
+import { getPlayer, checkQueueState, updateQueueState, updateActivityTime, canAddToQueue } from '../../utils/player.js';
+import { EmbedBuilder } from 'discord.js';
+import { useMainPlayer } from 'discord-player';
 
-export const command = {
+export default {
     data: new SlashCommandBuilder()
         .setName('play')
-        .setDescription('Müzik çalar')
+        .setDescription('Bir şarkı çalar')
         .addStringOption(option =>
-            option.setName('şarkı')
+            option.setName('query')
                 .setDescription('Şarkı adı veya URL')
                 .setRequired(true)),
 
     async execute(interaction) {
         try {
-            // Interaction'ı ertele
-            await interaction.deferReply();
-
-            // Ses kanalı kontrolü
-            const voiceChannel = interaction.member?.voice?.channel;
-            if (!voiceChannel) {
+            // Kullanıcının ses kanalında olup olmadığını kontrol et
+            const member = interaction.member;
+            if (!member.voice.channel) {
                 const embed = new EmbedBuilder()
-                    .setTitle('❌ Ses Kanalı Gerekli')
-                    .setDescription('Önce bir ses kanalına katılmalısın!')
+                    .setTitle('❌ Hata')
+                    .setDescription('Bu komutu kullanmak için bir ses kanalında olmalısın!')
                     .setColor('#FF0000');
-                return await interaction.editReply({ embeds: [embed] });
+                return interaction.reply({ embeds: [embed], ephemeral: true });
             }
 
-            // Bot yetkilerini kontrol et
-            const permissions = voiceChannel.permissionsFor(interaction.client.user);
-            if (!permissions.has(['Connect', 'Speak'])) {
+            // Bot'un ses kanalına bağlanma izni var mı kontrol et
+            const permissions = member.voice.channel.permissionsFor(interaction.client.user);
+            if (!permissions.has('Connect') || !permissions.has('Speak')) {
                 const embed = new EmbedBuilder()
-                    .setTitle('❌ Yetersiz Yetkiler')
-                    .setDescription('Ses kanalına katılmak ve konuşmak için yetkim yok!')
+                    .setTitle('❌ İzin Hatası')
+                    .setDescription('Ses kanalına bağlanmak için gerekli izinlere sahip değilim!')
                     .setColor('#FF0000');
-                return await interaction.editReply({ embeds: [embed] });
+                return interaction.reply({ embeds: [embed], ephemeral: true });
             }
+
+            // Kuyruk durumunu kontrol et
+            const queueState = checkQueueState(interaction.guild.id);
+            if (queueState?.error) {
+                const embed = new EmbedBuilder()
+                    .setTitle('❌ Hata')
+                    .setDescription('Şu anda bir hata durumu var. Lütfen biraz bekleyin veya `/stop` komutunu kullanın.')
+                    .setColor('#FF0000');
+                return interaction.reply({ embeds: [embed], ephemeral: true });
+            }
+
+            // Kuyruk boyutu kontrolü
+            if (!canAddToQueue(interaction.guild.id)) {
+                const embed = new EmbedBuilder()
+                    .setTitle('❌ Kuyruk Dolu')
+                    .setDescription('Kuyruk maksimum boyuta ulaştı! (100 şarkı)')
+                    .setColor('#FF0000');
+                return interaction.reply({ embeds: [embed], ephemeral: true });
+            }
+
+            // Arama sorgusunu al
+            const query = interaction.options.getString('query');
+
+            // Yükleniyor mesajı
+            const loadingEmbed = new EmbedBuilder()
+                .setTitle('🔍 Aranıyor...')
+                .setDescription(`**${query}** için arama yapılıyor...`)
+                .setColor('#FFA500');
+            await interaction.reply({ embeds: [loadingEmbed] });
+
+            // Player'ı al
+            const player = useMainPlayer();
 
             try {
-                const query = interaction.options.getString('şarkı', true);
-                const player = await getPlayer(interaction.client);
-
-                // Mevcut queue durumunu kontrol et
-                const queueState = checkQueueState(interaction.guildId);
-                
-                // Queue oluştur veya al
-                let queue = player.nodes.get(interaction.guildId);
-                if (!queue) {
-                    queue = player.nodes.create(interaction.guildId, {
+                // Şarkıyı ara ve çal
+                const { track } = await player.play(member.voice.channel, query, {
+                    nodeOptions: {
                         metadata: {
                             channel: interaction.channel,
-                            client: interaction.client,
-                            requestedBy: interaction.user,
-                            guildId: interaction.guildId
+                            guildId: interaction.guild.id,
+                            requestedBy: interaction.user
                         },
-                        selfDeaf: true,
-                        volume: 80,
                         leaveOnEmpty: true,
                         leaveOnEmptyCooldown: 300000, // 5 dakika
                         leaveOnEnd: true,
                         leaveOnEndCooldown: 300000, // 5 dakika
-                    });
-                }
-
-                try {
-                    if (!queue.connection) {
-                        await queue.connect(voiceChannel);
+                        volume: 80,
+                        bufferingTimeout: 3000,
+                        selfDeaf: true
                     }
-                } catch (error) {
-                    console.error('🔴 Ses kanalına bağlanma hatası:', error);
-                    queue.delete();
-                    const embed = new EmbedBuilder()
-                        .setTitle('❌ Bağlantı Hatası')
-                        .setDescription('Ses kanalına bağlanırken bir hata oluştu!')
-                        .setColor('#FF0000');
-                    return await interaction.editReply({ embeds: [embed] });
-                }
-
-                // Şarkı ara ve kuyruğa ekle
-                const searchResult = await player.search(query, {
-                    requestedBy: interaction.user
                 });
 
-                if (!searchResult.hasTracks()) {
-                    const embed = new EmbedBuilder()
-                        .setTitle('❌ Şarkı Bulunamadı')
-                        .setDescription(`"${query}" için sonuç bulunamadı!`)
-                        .setColor('#FF0000');
-                    return await interaction.editReply({ embeds: [embed] });
-                }
+                // Kuyruk durumunu güncelle
+                updateQueueState(interaction.guild.id, {
+                    isPlaying: true,
+                    currentTrack: track,
+                    queueSize: player.nodes.get(interaction.guild.id)?.tracks.size || 0,
+                    lastUpdate: Date.now()
+                });
 
-                try {
-                    searchResult.playlist
-                        ? queue.addTrack(searchResult.tracks)
-                        : queue.addTrack(searchResult.tracks[0]);
+                // Aktivite zamanını güncelle
+                updateActivityTime(interaction.guild.id);
 
-                    if (!queue.isPlaying()) {
-                        await queue.node.play();
-                    }
+                // Başarılı mesajı
+                const successEmbed = new EmbedBuilder()
+                    .setTitle('✅ Şarkı Eklendi')
+                    .setDescription(`**${track.title}** sıraya eklendi!`)
+                    .addFields(
+                        { name: '👤 Sanatçı', value: track.author, inline: true },
+                        { name: '⏱️ Süre', value: track.duration, inline: true },
+                        { name: '🔊 Ses', value: '80%', inline: true }
+                    )
+                    .setThumbnail(track.thumbnail)
+                    .setColor('#00FF00')
+                    .setFooter({ 
+                        text: `${interaction.user.tag} tarafından istendi`,
+                        iconURL: interaction.user.displayAvatarURL()
+                    });
 
-                    const embed = new EmbedBuilder()
-                        .setTitle(searchResult.playlist ? '📜 Playlist Eklendi' : '🎵 Şarkı Eklendi')
-                        .setDescription(
-                            searchResult.playlist
-                                ? `**${searchResult.playlist.title}** playlistinden ${searchResult.tracks.length} şarkı eklendi!`
-                                : `**${searchResult.tracks[0].title}** sıraya eklendi!`
-                        )
-                        .setColor('#00FF00')
-                        .setThumbnail(searchResult.playlist?.thumbnail || searchResult.tracks[0].thumbnail)
-                        .addFields(
-                            { name: '⏱️ Süre', value: searchResult.playlist 
-                                ? `Toplam ${Math.round(searchResult.tracks.reduce((acc, track) => acc + track.durationMS, 0) / 1000 / 60)} dakika`
-                                : searchResult.tracks[0].duration
-                            },
-                            { name: '👤 Ekleyen', value: interaction.user.tag }
-                        );
-                    
-                    return await interaction.editReply({ embeds: [embed] });
-                } catch (error) {
-                    console.error('🔴 Şarkı ekleme hatası:', error);
-                    const embed = new EmbedBuilder()
-                        .setTitle('❌ Oynatma Hatası')
-                        .setDescription('Şarkı eklenirken bir hata oluştu!')
-                        .setColor('#FF0000');
-                    return await interaction.editReply({ embeds: [embed] });
-                }
+                await interaction.editReply({ embeds: [successEmbed] });
+
             } catch (error) {
-                console.error('🔴 Arama hatası:', error);
-                const embed = new EmbedBuilder()
-                    .setTitle('❌ Arama Hatası')
-                    .setDescription('Şarkı aranırken bir hata oluştu!')
-                    .setColor('#FF0000');
-                return await interaction.editReply({ embeds: [embed] });
-            }
-        } catch (error) {
-            console.error('🔴 Genel hata:', error);
-            if (interaction.deferred) {
-                const embed = new EmbedBuilder()
+                console.error('Şarkı çalma hatası:', error);
+
+                // Hata mesajı
+                const errorEmbed = new EmbedBuilder()
                     .setTitle('❌ Hata')
-                    .setDescription('Beklenmeyen bir hata oluştu!')
+                    .setDescription('Şarkı çalınırken bir hata oluştu! Lütfen tekrar deneyin.')
                     .setColor('#FF0000');
-                await interaction.editReply({ embeds: [embed] }).catch(console.error);
+
+                if (error.message.includes('No results found')) {
+                    errorEmbed.setDescription('Aradığınız şarkı bulunamadı! Lütfen başka bir şarkı deneyin.');
+                } else if (error.message.includes('Connection failed')) {
+                    errorEmbed.setDescription('Ses kanalına bağlanırken bir hata oluştu! Lütfen tekrar deneyin.');
+                }
+
+                await interaction.editReply({ embeds: [errorEmbed] });
+
+                // Kuyruk durumunu güncelle
+                updateQueueState(interaction.guild.id, {
+                    error: true,
+                    errorMessage: error.message,
+                    lastError: Date.now()
+                });
             }
+
+        } catch (error) {
+            console.error('Play komutu hatası:', error);
+            const errorEmbed = new EmbedBuilder()
+                .setTitle('❌ Sistem Hatası')
+                .setDescription('Bir hata oluştu! Lütfen daha sonra tekrar deneyin.')
+                .setColor('#FF0000');
+            await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
         }
     }
 };

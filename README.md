@@ -2,7 +2,7 @@
 
 Modern ve kullanıcı dostu bir Discord müzik botu. YouTube ve Spotify desteği ile müzik çalma, playlist yönetimi ve moderasyon özellikleri sunar.
 
-## 🚀 Özellikler
+## 🚀 Özellikler - v2.0.9
 
 ### 🎵 Müzik Komutları
 - `/play` - YouTube veya Spotify'dan müzik çalar
