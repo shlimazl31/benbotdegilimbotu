@@ -1,7 +1,8 @@
-import { SlashCommandBuilder } from 'discord.js';
-import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
-import { useMainPlayer } from 'discord-player';
-import { checkQueueState, setLastNowPlayingMessage, clearLastNowPlayingMessage } from '../../utils/player.js';
+import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { getPlayer } from '../../utils/player.js';
+
+// Her sunucu için son nowplaying mesajını tutacak Map
+const lastNowPlayingMessages = new Map();
 
 export const command = {
     data: new SlashCommandBuilder()
@@ -10,56 +11,61 @@ export const command = {
 
     async execute(interaction) {
         try {
-            // Kullanıcının ses kanalında olup olmadığını kontrol et
-            if (!interaction.member.voice.channel) {
-                const errorEmbed = new EmbedBuilder()
-                    .setTitle('❌ Hata')
-                    .setDescription('Bir ses kanalında olmalısın!')
-                    .setColor('#FF0000');
-                return await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+            // Önceki nowplaying mesajını sil
+            const lastMsg = lastNowPlayingMessages.get(interaction.guildId);
+            if (lastMsg) {
+                try { await lastMsg.delete().catch(() => {}); } catch {}
             }
 
-            const player = useMainPlayer();
-            const queue = player.nodes.get(interaction.guild.id);
+            const player = await getPlayer(interaction.client);
+            const queue = player.nodes.get(interaction.guildId);
 
-            // Çalan şarkı var mı kontrol et
             if (!queue || !queue.isPlaying()) {
-                const errorEmbed = new EmbedBuilder()
-                    .setTitle('❌ Hata')
-                    .setDescription('Şu anda çalan bir şarkı yok!')
-                    .setColor('#FF0000');
-                return await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+                return await interaction.reply({
+                    content: '❌ Şu anda çalan bir şarkı yok!',
+                    ephemeral: true
+                });
             }
-
-            // Önceki now playing mesajını temizle
-            await clearLastNowPlayingMessage(interaction.guild.id);
 
             const track = queue.currentTrack;
-            const progress = queue.node.getTimestamp();
-            
-            // Süreleri formatla
-            const currentTime = formatTime(progress?.current || 0);
-            const totalTime = formatTime(track?.durationMS || 0);
-            const progressBar = createProgressBar(progress?.progress || 0);
+            if (!track) {
+                return await interaction.reply({
+                    content: '❌ Şu anda çalan bir şarkı yok!',
+                    ephemeral: true
+                });
+            }
 
-            // Embed oluştur
+            // Şarkı türüne göre renk belirleme
+            let color = '#FF0000'; // Varsayılan renk
+            const title = track.title.toLowerCase();
+            
+            if (title.includes('pop')) color = '#FF69B4';
+            else if (title.includes('rock')) color = '#FF0000';
+            else if (title.includes('rap') || title.includes('hip hop')) color = '#000000';
+            else if (title.includes('classic')) color = '#FFD700';
+            else if (title.includes('jazz')) color = '#8B4513';
+            else if (title.includes('electronic') || title.includes('edm')) color = '#00FFFF';
+
+            const progress = queue.node.createProgressBar();
+            const timestamp = queue.node.getTimestamp();
+
             const embed = new EmbedBuilder()
                 .setTitle('🎵 Şimdi Çalıyor')
                 .setDescription(`**${track.title}**`)
-                .setColor('#00FF00')
-                .setThumbnail(track.thumbnail)
                 .addFields(
-                    { name: '👤 Sanatçı', value: track.author || 'Bilinmiyor', inline: true },
-                    { name: '⏱️ Süre', value: totalTime, inline: true },
+                    { name: '👤 Sanatçı', value: track.author, inline: true },
+                    { name: '⏱️ Süre', value: track.duration, inline: true },
                     { name: '🔊 Ses', value: `${queue.node.volume}%`, inline: true },
-                    { name: '📊 İlerleme', value: `${currentTime} ┃ ${progressBar} ┃ ${totalTime}`, inline: false }
+                    { name: '📊 İlerleme', value: progress, inline: false }
                 )
+                .setThumbnail(track.thumbnail)
+                .setColor(color)
                 .setFooter({ 
-                    text: `İsteyen: ${interaction.user.tag}`,
-                    iconURL: interaction.user.displayAvatarURL()
+                    text: `İsteyen: ${track.requestedBy.tag}`,
+                    iconURL: track.requestedBy.displayAvatarURL()
                 });
 
-            // Butonları oluştur
+            // Kontrol butonları
             const row = new ActionRowBuilder()
                 .addComponents(
                     new ButtonBuilder()
@@ -69,180 +75,199 @@ export const command = {
                     new ButtonBuilder()
                         .setCustomId('skip')
                         .setLabel('⏭️ Geç')
-                        .setStyle(ButtonStyle.Primary),
+                        .setStyle(ButtonStyle.Secondary),
                     new ButtonBuilder()
                         .setCustomId('loop')
-                        .setLabel(queue.repeatMode ? '🔁 Tekrar: Açık' : '🔁 Tekrar: Kapalı')
-                        .setStyle(queue.repeatMode ? ButtonStyle.Success : ButtonStyle.Secondary),
+                        .setLabel(queue.repeatMode === 0 ? '🔁 Tekrarla' : '🔁 Tekrarı Kapat')
+                        .setStyle(queue.repeatMode === 0 ? ButtonStyle.Secondary : ButtonStyle.Success),
                     new ButtonBuilder()
                         .setCustomId('shuffle')
                         .setLabel('🔀 Karıştır')
-                        .setStyle(ButtonStyle.Primary),
+                        .setStyle(ButtonStyle.Secondary),
                     new ButtonBuilder()
                         .setCustomId('stop')
                         .setLabel('⏹️ Durdur')
                         .setStyle(ButtonStyle.Danger)
                 );
 
-            // Mesajı gönder
-            const message = await interaction.reply({ 
-                embeds: [embed], 
+            const message = await interaction.reply({
+                embeds: [embed],
                 components: [row],
-                fetchReply: true 
+                fetchReply: true
             });
 
-            // Mesajı kaydet
-            setLastNowPlayingMessage(interaction.guild.id, message);
+            // Son mesajı kaydet
+            lastNowPlayingMessages.set(interaction.guildId, message);
 
-            // Buton etkileşimlerini dinle
-            const collector = message.createMessageComponentCollector({ 
+            // Buton etkileşimlerini topla
+            const collector = message.createMessageComponentCollector({
                 time: 300000 // 5 dakika
             });
 
             collector.on('collect', async (i) => {
                 if (i.user.id !== interaction.user.id) {
-                    return i.reply({ 
-                        content: '❌ Bu butonları sadece komutu kullanan kişi kullanabilir!', 
-                        ephemeral: true 
+                    return await i.reply({
+                        content: '❌ Bu butonları sadece komutu kullanan kişi kullanabilir!',
+                        ephemeral: true
                     });
                 }
 
-                try {
-                    switch (i.customId) {
-                        case 'pause':
-                            queue.node.setPaused(!queue.node.isPaused());
-                            break;
-                        case 'skip':
-                            queue.node.skip();
-                            break;
-                        case 'loop':
-                            queue.setRepeatMode(queue.repeatMode ? 0 : 2);
-                            break;
-                        case 'shuffle':
-                            queue.tracks.shuffle();
-                            break;
-                        case 'stop':
-                            queue.delete();
-                            await i.update({ 
-                                embeds: [embed.setDescription('🎵 Müzik durduruldu!')], 
-                                components: [] 
-                            });
-                            return collector.stop();
-                    }
-
-                    // Butonları güncelle
-                    const newRow = new ActionRowBuilder()
-                        .addComponents(
-                            new ButtonBuilder()
-                                .setCustomId('pause')
-                                .setLabel(queue.node.isPaused() ? '▶️ Devam Et' : '⏸️ Duraklat')
-                                .setStyle(ButtonStyle.Primary),
-                            new ButtonBuilder()
-                                .setCustomId('skip')
-                                .setLabel('⏭️ Geç')
-                                .setStyle(ButtonStyle.Primary),
-                            new ButtonBuilder()
-                                .setCustomId('loop')
-                                .setLabel(queue.repeatMode ? '🔁 Tekrar: Açık' : '🔁 Tekrar: Kapalı')
-                                .setStyle(queue.repeatMode ? ButtonStyle.Success : ButtonStyle.Secondary),
-                            new ButtonBuilder()
-                                .setCustomId('shuffle')
-                                .setLabel('🔀 Karıştır')
-                                .setStyle(ButtonStyle.Primary),
-                            new ButtonBuilder()
-                                .setCustomId('stop')
-                                .setLabel('⏹️ Durdur')
-                                .setStyle(ButtonStyle.Danger)
-                        );
-
-                    await i.update({ components: [newRow] });
-                } catch (error) {
-                    console.error('Buton etkileşimi hatası:', error);
-                    await i.reply({ 
-                        content: '❌ Bir hata oluştu!', 
-                        ephemeral: true 
+                const queue = player.nodes.get(i.guildId);
+                if (!queue) {
+                    return await i.reply({
+                        content: '❌ Şu anda çalan bir şarkı yok!',
+                        ephemeral: true
                     });
+                }
+
+                switch (i.customId) {
+                    case 'pause':
+                        queue.node.setPaused(!queue.node.isPaused());
+                        await i.update({
+                            components: [
+                                new ActionRowBuilder()
+                                    .addComponents(
+                                        new ButtonBuilder()
+                                            .setCustomId('pause')
+                                            .setLabel(queue.node.isPaused() ? '▶️ Devam Et' : '⏸️ Duraklat')
+                                            .setStyle(ButtonStyle.Primary),
+                                        new ButtonBuilder()
+                                            .setCustomId('skip')
+                                            .setLabel('⏭️ Geç')
+                                            .setStyle(ButtonStyle.Secondary),
+                                        new ButtonBuilder()
+                                            .setCustomId('loop')
+                                            .setLabel(queue.repeatMode === 0 ? '🔁 Tekrarla' : '🔁 Tekrarı Kapat')
+                                            .setStyle(queue.repeatMode === 0 ? ButtonStyle.Secondary : ButtonStyle.Success),
+                                        new ButtonBuilder()
+                                            .setCustomId('shuffle')
+                                            .setLabel('🔀 Karıştır')
+                                            .setStyle(ButtonStyle.Secondary),
+                                        new ButtonBuilder()
+                                            .setCustomId('stop')
+                                            .setLabel('⏹️ Durdur')
+                                            .setStyle(ButtonStyle.Danger)
+                                    )
+                            ]
+                        });
+                        break;
+
+                    case 'skip':
+                        queue.node.skip();
+                        await i.update({
+                            components: []
+                        });
+                        break;
+
+                    case 'loop':
+                        queue.setRepeatMode(queue.repeatMode === 0 ? 1 : 0);
+                        await i.update({
+                            components: [
+                                new ActionRowBuilder()
+                                    .addComponents(
+                                        new ButtonBuilder()
+                                            .setCustomId('pause')
+                                            .setLabel(queue.node.isPaused() ? '▶️ Devam Et' : '⏸️ Duraklat')
+                                            .setStyle(ButtonStyle.Primary),
+                                        new ButtonBuilder()
+                                            .setCustomId('skip')
+                                            .setLabel('⏭️ Geç')
+                                            .setStyle(ButtonStyle.Secondary),
+                                        new ButtonBuilder()
+                                            .setCustomId('loop')
+                                            .setLabel(queue.repeatMode === 0 ? '🔁 Tekrarla' : '🔁 Tekrarı Kapat')
+                                            .setStyle(queue.repeatMode === 0 ? ButtonStyle.Secondary : ButtonStyle.Success),
+                                        new ButtonBuilder()
+                                            .setCustomId('shuffle')
+                                            .setLabel('🔀 Karıştır')
+                                            .setStyle(ButtonStyle.Secondary),
+                                        new ButtonBuilder()
+                                            .setCustomId('stop')
+                                            .setLabel('⏹️ Durdur')
+                                            .setStyle(ButtonStyle.Danger)
+                                    )
+                            ]
+                        });
+                        break;
+
+                    case 'shuffle':
+                        queue.tracks.shuffle();
+                        await i.update({
+                            components: []
+                        });
+                        break;
+
+                    case 'stop':
+                        queue.delete();
+                        await i.update({
+                            components: []
+                        });
+                        break;
                 }
             });
 
             collector.on('end', () => {
-                // Butonları devre dışı bırak
-                const disabledRow = new ActionRowBuilder()
-                    .addComponents(
-                        new ButtonBuilder()
-                            .setCustomId('pause')
-                            .setLabel('⏸️ Duraklat')
-                            .setStyle(ButtonStyle.Primary)
-                            .setDisabled(true),
-                        new ButtonBuilder()
-                            .setCustomId('skip')
-                            .setLabel('⏭️ Geç')
-                            .setStyle(ButtonStyle.Primary)
-                            .setDisabled(true),
-                        new ButtonBuilder()
-                            .setCustomId('loop')
-                            .setLabel('🔁 Tekrar')
-                            .setStyle(ButtonStyle.Secondary)
-                            .setDisabled(true),
-                        new ButtonBuilder()
-                            .setCustomId('shuffle')
-                            .setLabel('🔀 Karıştır')
-                            .setStyle(ButtonStyle.Primary)
-                            .setDisabled(true),
-                        new ButtonBuilder()
-                            .setCustomId('stop')
-                            .setLabel('⏹️ Durdur')
-                            .setStyle(ButtonStyle.Danger)
-                            .setDisabled(true)
-                    );
-
-                message.edit({ components: [disabledRow] }).catch(console.error);
+                message.edit({
+                    components: []
+                }).catch(() => {});
             });
 
+            // Her 10 saniyede bir mesajı güncelle
+            const updateInterval = setInterval(async () => {
+                try {
+                    const currentQueue = player.nodes.get(interaction.guildId);
+                    if (!currentQueue || !currentQueue.isPlaying()) {
+                        clearInterval(updateInterval);
+                        return;
+                    }
+
+                    const currentTrack = currentQueue.currentTrack;
+                    if (!currentTrack) {
+                        clearInterval(updateInterval);
+                        return;
+                    }
+
+                    const progress = currentQueue.node.createProgressBar();
+                    const timestamp = currentQueue.node.getTimestamp();
+
+                    const updatedEmbed = new EmbedBuilder()
+                        .setTitle('🎵 Şimdi Çalıyor')
+                        .setDescription(`**${currentTrack.title}**`)
+                        .addFields(
+                            { name: '👤 Sanatçı', value: currentTrack.author, inline: true },
+                            { name: '⏱️ Süre', value: currentTrack.duration, inline: true },
+                            { name: '🔊 Ses', value: `${currentQueue.node.volume}%`, inline: true },
+                            { name: '📊 İlerleme', value: progress, inline: false }
+                        )
+                        .setThumbnail(currentTrack.thumbnail)
+                        .setColor(color)
+                        .setFooter({ 
+                            text: `İsteyen: ${currentTrack.requestedBy.tag}`,
+                            iconURL: currentTrack.requestedBy.displayAvatarURL()
+                        });
+
+                    await message.edit({
+                        embeds: [updatedEmbed]
+                    });
+                } catch (error) {
+                    console.error('Mesaj güncelleme hatası:', error);
+                    clearInterval(updateInterval);
+                }
+            }, 10000);
+
+            // 15 dakika sonra güncellemeyi durdur
+            setTimeout(() => {
+                clearInterval(updateInterval);
+            }, 15 * 60 * 1000);
+
         } catch (error) {
-            console.error('Nowplaying komutu hatası:', error);
-            
-            // Eğer etkileşim henüz yanıtlanmamışsa
+            console.error('Nowplaying hatası:', error);
             if (!interaction.replied && !interaction.deferred) {
-                const errorEmbed = new EmbedBuilder()
-                    .setTitle('❌ Sistem Hatası')
-                    .setDescription('Bir hata oluştu! Lütfen daha sonra tekrar deneyin.')
-                    .setColor('#FF0000');
-                await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
-            } else {
-                // Etkileşim zaten yanıtlanmışsa, mesajı düzenle
-                const errorEmbed = new EmbedBuilder()
-                    .setTitle('❌ Sistem Hatası')
-                    .setDescription('Bir hata oluştu! Lütfen daha sonra tekrar deneyin.')
-                    .setColor('#FF0000');
-                await interaction.editReply({ embeds: [errorEmbed] });
+                await interaction.reply({
+                    content: '❌ Bir hata oluştu!',
+                    ephemeral: true
+                });
             }
         }
     }
-};
-
-// Yardımcı fonksiyonlar
-function createProgressBar(progress) {
-    if (!progress || isNaN(progress) || progress < 0 || progress > 1) {
-        progress = 0;
-    }
-    
-    const length = 12;
-    const filled = Math.max(0, Math.min(length, Math.round(length * progress)));
-    const empty = length - filled;
-    
-    const filledBar = '▬'.repeat(filled);
-    const emptyBar = '▬'.repeat(empty);
-    
-    return `${filledBar}🔘${emptyBar}`;
-}
-
-function formatTime(ms) {
-    if (!ms || isNaN(ms)) return '00:00';
-    
-    const totalSeconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-} 
+}; 
