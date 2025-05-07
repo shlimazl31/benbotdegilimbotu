@@ -7,7 +7,7 @@ export const command = {
         .setDescription('Playlist komutları')
         .addSubcommand(subcommand =>
             subcommand
-                .setName('playlist-play')
+                .setName('list')
                 .setDescription('Bir playlist\'i çalar')
                 .addStringOption(option =>
                     option.setName('url')

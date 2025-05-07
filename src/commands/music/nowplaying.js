@@ -44,15 +44,15 @@ export const command = {
 
             // Embed oluştur
             const embed = new EmbedBuilder()
-                .setTitle('🎵 Şu Anda Çalıyor')
+                .setTitle('🎵 Şimdi Çalıyor')
                 .setDescription(`**${track.title}**`)
                 .setColor('#00FF00')
                 .setThumbnail(track.thumbnail)
                 .addFields(
-                    { name: '🎤 Sanatçı', value: track.author || 'Bilinmiyor', inline: true },
-                    { name: '⏱️ Süre', value: `${currentTime} / ${totalTime}`, inline: true },
-                    { name: '🔊 Ses Seviyesi', value: `${queue.node.volume}%`, inline: true },
-                    { name: '📊 İlerleme', value: progressBar, inline: false }
+                    { name: '👤 Sanatçı', value: track.author || 'Bilinmiyor', inline: true },
+                    { name: '⏱️ Süre', value: totalTime || '00:00', inline: true },
+                    { name: '🔊 Ses', value: `${queue.node.volume}%`, inline: true },
+                    { name: '📊 İlerleme', value: `${currentTime || '00:00'} ┃ ${progressBar} ┃ ${totalTime || '00:00'}`, inline: false }
                 )
                 .setFooter({ 
                     text: `İsteyen: ${interaction.user.tag}`,
@@ -223,26 +223,21 @@ export const command = {
 
 // Yardımcı fonksiyonlar
 function createProgressBar(progress) {
-    const length = 20;
+    const length = 12;
     const filled = Math.round(length * progress);
     const empty = length - filled;
     
-    const filledBar = '─'.repeat(filled);
-    const emptyBar = '─'.repeat(empty);
+    const filledBar = '▬'.repeat(filled);
+    const emptyBar = '▬'.repeat(empty);
     
-    return `[${filledBar}●${emptyBar}]`;
+    return `${filledBar}🔘${emptyBar}`;
 }
 
 function formatTime(ms) {
-    if (!ms) return '00:00';
+    if (!ms || isNaN(ms)) return '00:00';
     
     const seconds = Math.floor((ms / 1000) % 60);
     const minutes = Math.floor((ms / (1000 * 60)) % 60);
-    const hours = Math.floor(ms / (1000 * 60 * 60));
-    
-    if (hours > 0) {
-        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    }
     
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 } 

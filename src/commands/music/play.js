@@ -5,7 +5,7 @@ import { checkQueueState, updateQueueState } from '../../utils/player.js';
 
 export const command = {
     data: new SlashCommandBuilder()
-        .setName('play-music')
+        .setName('play')
         .setDescription('Bir şarkı çalar')
         .addStringOption(option =>
             option.setName('şarkı')
