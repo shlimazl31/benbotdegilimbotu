@@ -4,7 +4,7 @@ import { getPlayer } from '../../utils/player.js';
 // Kullanıcıların son nowplaying mesajlarını tutacak Map
 const lastNowPlayingMessages = new Map();
 
-export default {
+export const command = {
     data: new SlashCommandBuilder()
         .setName('nowplaying')
         .setDescription('Şu anda çalan şarkıyı gösterir'),
