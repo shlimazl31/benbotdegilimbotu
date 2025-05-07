@@ -84,7 +84,7 @@ export const command = {
                 .setTitle('🎵 Şimdi Çalıyor')
                 .setDescription(`**${track.title}**`)
                 .addFields(
-                    { name: '👤 Sanatçı', value: track.author, inline: true },
+                    { name: '👤 Sanatçı', value: track.author || 'Bilinmiyor', inline: true },
                     { name: '⏱️ Süre', value: totalTime, inline: true },
                     { name: '🔊 Ses', value: `${queue.node.volume}%`, inline: true },
                     { name: '📊 İlerleme', value: `${currentTime} ┃ ${progressBar} ┃ ${totalTime}`, inline: false }
@@ -92,8 +92,8 @@ export const command = {
                 .setThumbnail(track.thumbnail)
                 .setColor(color)
                 .setFooter({ 
-                    text: `İsteyen: ${track.requestedBy.tag}`,
-                    iconURL: track.requestedBy.displayAvatarURL()
+                    text: `İsteyen: ${track.requestedBy?.tag || interaction.user.tag}`,
+                    iconURL: track.requestedBy?.displayAvatarURL() || interaction.user.displayAvatarURL()
                 });
 
             // Kontrol butonları
@@ -271,7 +271,7 @@ export const command = {
                         .setTitle('🎵 Şimdi Çalıyor')
                         .setDescription(`**${currentTrack.title}**`)
                         .addFields(
-                            { name: '👤 Sanatçı', value: currentTrack.author, inline: true },
+                            { name: '👤 Sanatçı', value: currentTrack.author || 'Bilinmiyor', inline: true },
                             { name: '⏱️ Süre', value: totalTime, inline: true },
                             { name: '🔊 Ses', value: `${currentQueue.node.volume}%`, inline: true },
                             { name: '📊 İlerleme', value: `${currentTime} ┃ ${progressBar} ┃ ${totalTime}`, inline: false }
@@ -279,8 +279,8 @@ export const command = {
                         .setThumbnail(currentTrack.thumbnail)
                         .setColor(color)
                         .setFooter({ 
-                            text: `İsteyen: ${currentTrack.requestedBy.tag}`,
-                            iconURL: currentTrack.requestedBy.displayAvatarURL()
+                            text: `İsteyen: ${currentTrack.requestedBy?.tag || interaction.user.tag}`,
+                            iconURL: currentTrack.requestedBy?.displayAvatarURL() || interaction.user.displayAvatarURL()
                         });
 
                     await message.edit({
