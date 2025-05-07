@@ -38,9 +38,9 @@ export const command = {
             const progress = queue.node.getTimestamp();
             
             // Süreleri formatla
-            const currentTime = formatTime(progress.current);
-            const totalTime = formatTime(progress.total);
-            const progressBar = createProgressBar(progress.progress);
+            const currentTime = formatTime(progress?.current || 0);
+            const totalTime = formatTime(track?.durationMS || 0);
+            const progressBar = createProgressBar(progress?.progress || 0);
 
             // Embed oluştur
             const embed = new EmbedBuilder()
@@ -50,9 +50,9 @@ export const command = {
                 .setThumbnail(track.thumbnail)
                 .addFields(
                     { name: '👤 Sanatçı', value: track.author || 'Bilinmiyor', inline: true },
-                    { name: '⏱️ Süre', value: totalTime || '00:00', inline: true },
+                    { name: '⏱️ Süre', value: totalTime, inline: true },
                     { name: '🔊 Ses', value: `${queue.node.volume}%`, inline: true },
-                    { name: '📊 İlerleme', value: `${currentTime || '00:00'} ┃ ${progressBar} ┃ ${totalTime || '00:00'}`, inline: false }
+                    { name: '📊 İlerleme', value: `${currentTime} ┃ ${progressBar} ┃ ${totalTime}`, inline: false }
                 )
                 .setFooter({ 
                     text: `İsteyen: ${interaction.user.tag}`,
@@ -240,8 +240,9 @@ function createProgressBar(progress) {
 function formatTime(ms) {
     if (!ms || isNaN(ms)) return '00:00';
     
-    const seconds = Math.floor((ms / 1000) % 60);
-    const minutes = Math.floor((ms / (1000 * 60)) % 60);
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
     
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 } 
