@@ -5,7 +5,9 @@ Modern ve kullanıcı dostu bir Discord müzik botu. YouTube ve Spotify desteği
 ## 🚀 Özellikler - v2.0.9
 
 ### 🎵 Müzik Komutları
+- `/join` - Ses kanalına katılır
 - `/play` - YouTube veya Spotify'dan müzik çalar
+- `/search` - YouTube'da şarkı arar
 - `/pause` - Şarkıyı duraklatır
 - `/resume` - Duraklatılmış şarkıyı devam ettirir
 - `/stop` - Müziği durdurur
@@ -13,7 +15,7 @@ Modern ve kullanıcı dostu bir Discord müzik botu. YouTube ve Spotify desteği
 - `/previous` - Önceki şarkıya döner
 - `/leave` - Bot ses kanalından ayrılır
 - `/lyrics` - Şarkı sözlerini gösterir
-- `/search` - YouTube'da şarkı arar
+- `/247` - 24/7 modunu açar/kapatır
 
 ### 📑 Sıra Yönetimi
 - `/queue` - Şarkı sırasını gösterir
@@ -26,7 +28,6 @@ Modern ve kullanıcı dostu bir Discord müzik botu. YouTube ve Spotify desteği
 - `/volume` - Ses seviyesini ayarlar (1-100)
 - `/seek` - Şarkının belirli bir saniyesine atlar
 - `/nowplaying` - Çalan şarkının detaylı bilgilerini gösterir
-- `/247` - 24/7 modunu açar/kapatır
 - `/autoplay` - Otomatik oynatma modunu açar/kapatır
 
 ### 📋 Playlist Özellikleri
@@ -34,11 +35,15 @@ Modern ve kullanıcı dostu bir Discord müzik botu. YouTube ve Spotify desteği
 - `/playlist info` - Playlist bilgilerini gösterir
 
 ### 🎬 Film Komutları
-* `/film ara` - Film arama
-* `/film kategori` - Kategoriye göre film listesi
-* `/filmdetay` - Film hakkında detaylı bilgi
-* `/rastgelefilm` - Rastgele film önerisi
+- `/film ara` - Film arama
+- `/film kategori` - Kategoriye göre film listesi
+- `/filmdetay` - Film hakkında detaylı bilgi
+- `/rastgelefilm` - Rastgele film önerisi
 
+### 🎧 DJ Sistemi
+- `/dj ayarla` - DJ rolünü ayarlar
+- `/dj kaldır` - DJ rolünü kaldırır
+- `/dj bilgi` - DJ rolü bilgilerini gösterir
 
 ### 👮 Moderasyon
 - `/purge` - Belirtilen sayıda mesajı siler (1-100)
@@ -47,7 +52,6 @@ Modern ve kullanıcı dostu bir Discord müzik botu. YouTube ve Spotify desteği
 - `/help` - Tüm komutları ve açıklamalarını gösterir
 - `/ping` - Bot gecikmesini gösterir
 - `/stats` - Bot istatistiklerini gösterir
-
 
 ## 🌐 Web Panel (Yapım Aşamasında)
 
