@@ -180,9 +180,10 @@ const limiter = rateLimit({
 
 // CORS ayarları
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || 'https://benbotdegilim.online',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true
+    origin: ['https://benbotdegilim.online', 'https://benbotdegilim.online/callback'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
