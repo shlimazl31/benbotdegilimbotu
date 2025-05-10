@@ -28,11 +28,7 @@ export const command = {
                 return await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
             }
 
-            const loadingEmbed = new EmbedBuilder()
-                .setTitle('🔍 Aranıyor...')
-                .setDescription('Şarkı aranıyor...')
-                .setColor('#FFA500');
-            await interaction.reply({ embeds: [loadingEmbed] });
+            await interaction.deferReply();
 
             const query = interaction.options.getString('şarkı');
             const player = interaction.client.manager.create({
@@ -41,6 +37,8 @@ export const command = {
                 textChannel: interaction.channel.id,
                 selfDeafen: true,
             });
+
+            player.setVolume(20);
 
             const res = await player.search(query, interaction.user);
             if (!res || !res.tracks.length) {
@@ -60,7 +58,8 @@ export const command = {
                     .setThumbnail(res.tracks[0].thumbnail)
                     .addFields(
                         { name: '👤 Oluşturan', value: res.playlist.author || 'Bilinmiyor', inline: true },
-                        { name: '🎵 Toplam Şarkı', value: res.tracks.length.toString(), inline: true }
+                        { name: '🎵 Toplam Şarkı', value: res.tracks.length.toString(), inline: true },
+                        { name: '🔊 Ses Seviyesi', value: '20%', inline: true }
                     );
                 await interaction.editReply({ embeds: [successEmbed] });
             } else {
@@ -73,7 +72,7 @@ export const command = {
                     .addFields(
                         { name: '🎤 Sanatçı', value: res.tracks[0].author, inline: true },
                         { name: '⏱️ Süre', value: res.tracks[0].duration, inline: true },
-                        { name: '🔊 Ses Seviyesi', value: '100%', inline: true }
+                        { name: '🔊 Ses Seviyesi', value: '20%', inline: true }
                     )
                     .setFooter({ text: `İsteyen: ${interaction.user.tag}` });
                 await interaction.editReply({ embeds: [successEmbed] });
@@ -88,7 +87,11 @@ export const command = {
                 .setTitle('❌ Hata')
                 .setDescription(`Şarkı çalınırken bir hata oluştu: ${error.message}`)
                 .setColor('#FF0000');
-            await interaction.editReply({ embeds: [errorEmbed] });
+            if (interaction.deferred) {
+                await interaction.editReply({ embeds: [errorEmbed] });
+            } else {
+                await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+            }
         }
     }
 };
