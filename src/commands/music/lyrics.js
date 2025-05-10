@@ -1,6 +1,5 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
-import { useMainPlayer } from 'discord-player';
 import { Client } from 'genius-lyrics';
 
 export const command = {
@@ -29,10 +28,9 @@ export const command = {
 
             // Eğer query belirtilmemişse, çalan şarkıyı kullan
             if (!query) {
-                const player = useMainPlayer();
-                const queue = player.nodes.get(interaction.guild.id);
+                const player = interaction.client.manager.get(interaction.guild.id);
 
-                if (!queue || !queue.isPlaying()) {
+                if (!player || !player.queue.current) {
                     const errorEmbed = new EmbedBuilder()
                         .setTitle('❌ Hata')
                         .setDescription('Şu anda çalan bir şarkı yok! Lütfen bir şarkı adı belirtin.')
@@ -40,7 +38,7 @@ export const command = {
                     return await interaction.editReply({ embeds: [errorEmbed] });
                 }
 
-                query = `${queue.currentTrack.title} ${queue.currentTrack.author}`;
+                query = `${player.queue.current.title} ${player.queue.current.author}`;
             }
 
             try {

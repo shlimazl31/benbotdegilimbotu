@@ -3,11 +3,11 @@ import { Events, EmbedBuilder } from 'discord.js';
 export const event = {
     name: Events.PlayerStateUpdate,
     once: false,
-    async execute(queue, oldState, newState) {
+    async execute(player, oldState, newState) {
         try {
             // Eğer bot kanaldan ayrıldıysa
             if (oldState.status === 'ready' && newState.status === 'disconnected') {
-                const channel = queue.metadata;
+                const channel = player.textChannel;
                 if (channel) {
                     const embed = new EmbedBuilder()
                         .setTitle('👋 Otomatik Ayrılma')
