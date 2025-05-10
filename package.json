@@ -19,10 +19,13 @@
   "homepage": "https://github.com/shlimazl31/benbotdegilimbotu#readme",
   "description": "",
   "dependencies": {
+    "@discord-player/extractor": "^4.5.1",
     "@discordjs/opus": "^0.10.0",
     "@discordjs/voice": "^0.16.1",
     "bgutils-js": "^3.2.0",
     "cors": "^2.8.5",
+    "discord-player": "^6.7.1",
+    "discord-player-youtubei": "^1.4.5",
     "discord.js": "^14.14.1",
     "dotenv": "^16.4.5",
     "erela.js": "^2.4.0",
