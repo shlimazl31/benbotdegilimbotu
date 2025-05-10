@@ -11,12 +11,14 @@ export const command = {
 
     async execute(interaction) {
         try {
+            await interaction.deferReply();
+
             if (!interaction.member.voice.channel) {
                 const errorEmbed = new EmbedBuilder()
                     .setTitle('❌ Hata')
                     .setDescription('Bir ses kanalında olmalısın!')
                     .setColor('#FF0000');
-                return await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+                return await interaction.editReply({ embeds: [errorEmbed] });
             }
 
             const permissions = interaction.member.voice.channel.permissionsFor(interaction.client.user);
@@ -25,10 +27,8 @@ export const command = {
                     .setTitle('❌ Hata')
                     .setDescription('Ses kanalına katılmak ve konuşmak için izinlerim yok!')
                     .setColor('#FF0000');
-                return await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+                return await interaction.editReply({ embeds: [errorEmbed] });
             }
-
-            await interaction.deferReply();
 
             const query = interaction.options.getString('şarkı');
             const player = interaction.client.manager.create({
@@ -87,11 +87,7 @@ export const command = {
                 .setTitle('❌ Hata')
                 .setDescription(`Şarkı çalınırken bir hata oluştu: ${error.message}`)
                 .setColor('#FF0000');
-            if (interaction.deferred) {
-                await interaction.editReply({ embeds: [errorEmbed] });
-            } else {
-                await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
-            }
+            await interaction.editReply({ embeds: [errorEmbed] });
         }
     }
 };
