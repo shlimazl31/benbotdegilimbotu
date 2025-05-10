@@ -15,24 +15,16 @@ export const command = {
 
             if (!interaction.member.voice.channel) {
                 return await interaction.editReply({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setTitle('❌ Hata')
-                            .setDescription('Bir ses kanalında olmalısın!')
-                            .setColor('#FF0000')
-                    ]
+                    content: '❌ Bir ses kanalında olmalısın!',
+                    ephemeral: true
                 });
             }
 
             const permissions = interaction.member.voice.channel.permissionsFor(interaction.client.user);
             if (!permissions.has('Connect') || !permissions.has('Speak')) {
                 return await interaction.editReply({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setTitle('❌ Hata')
-                            .setDescription('Ses kanalına katılmak ve konuşmak için izinlerim yok!')
-                            .setColor('#FF0000')
-                    ]
+                    content: '❌ Ses kanalına katılmak ve konuşmak için izinlerim yok!',
+                    ephemeral: true
                 });
             }
 
@@ -55,12 +47,8 @@ export const command = {
             
             if (!res || !res.tracks.length) {
                 return await interaction.editReply({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setTitle('❌ Hata')
-                            .setDescription('Şarkı bulunamadı!')
-                            .setColor('#FF0000')
-                    ]
+                    content: '❌ Şarkı bulunamadı!',
+                    ephemeral: true
                 });
             }
 
@@ -103,17 +91,20 @@ export const command = {
                 player.play();
             }
         } catch (error) {
-            console.error('Şarkı çalma hatası:', error);
+            console.error('Play komutu hatası:', error);
             
             try {
-                await interaction.editReply({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setTitle('❌ Hata')
-                            .setDescription(`Şarkı çalınırken bir hata oluştu: ${error.message}`)
-                            .setColor('#FF0000')
-                    ]
-                });
+                if (!interaction.replied && !interaction.deferred) {
+                    await interaction.reply({
+                        content: `❌ Bir hata oluştu: ${error.message}`,
+                        ephemeral: true
+                    });
+                } else {
+                    await interaction.editReply({
+                        content: `❌ Bir hata oluştu: ${error.message}`,
+                        ephemeral: true
+                    });
+                }
             } catch (err) {
                 console.error('Hata mesajı gönderilirken ikinci bir hata oluştu:', err);
             }
