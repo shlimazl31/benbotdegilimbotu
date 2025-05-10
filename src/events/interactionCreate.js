@@ -1,11 +1,14 @@
+import { Events } from 'discord.js';
+
 export const event = {
-    name: 'interactionCreate',
+    name: Events.InteractionCreate,
     async execute(interaction) {
         if (!interaction.isChatInputCommand()) return;
 
         const command = interaction.client.commands.get(interaction.commandName);
+
         if (!command) {
-            console.log(`Komut bulunamadı: ${interaction.commandName}`);
+            console.error(`${interaction.commandName} komutu bulunamadı.`);
             return;
         }
 
@@ -15,15 +18,16 @@ export const event = {
             console.error(`Komut hatası (${interaction.commandName}):`, error);
             
             try {
-                const errorMessage = {
-                    content: 'Bu komutu çalıştırırken bir hata oluştu!',
-                    ephemeral: true
-                };
-
-                if (interaction.deferred) {
-                    await interaction.editReply(errorMessage);
-                } else if (!interaction.replied) {
-                    await interaction.reply(errorMessage);
+                if (!interaction.replied && !interaction.deferred) {
+                    await interaction.reply({
+                        content: '❌ Komut çalıştırılırken bir hata oluştu!',
+                        ephemeral: true
+                    });
+                } else {
+                    await interaction.editReply({
+                        content: '❌ Komut çalıştırılırken bir hata oluştu!',
+                        ephemeral: true
+                    });
                 }
             } catch (err) {
                 console.error('Hata mesajı gönderilirken ikinci bir hata oluştu:', err);
