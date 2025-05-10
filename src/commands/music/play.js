@@ -11,9 +11,9 @@ export const command = {
                 .setRequired(true)),
 
     async execute(interaction) {
-        try {
-            await interaction.deferReply();
+        await interaction.deferReply();
 
+        try {
             const query = interaction.options.getString('query');
             const member = interaction.member;
             const channel = member.voice.channel;
@@ -52,17 +52,15 @@ export const command = {
                     }
                 });
 
-                await interaction.editReply(`🎵 **${track.title}** şarkısı çalınıyor!`);
+                return await interaction.editReply(`🎵 **${track.title}** şarkısı çalınıyor!`);
             } catch (error) {
                 console.error('Oynatma hatası:', error);
-                await interaction.editReply('❌ Şarkı çalınırken bir hata oluştu!');
+                return await interaction.editReply('❌ Şarkı çalınırken bir hata oluştu!');
             }
         } catch (error) {
             console.error('Play komutu hatası:', error);
-            if (!interaction.replied && !interaction.deferred) {
-                await interaction.reply({ content: '❌ Bir hata oluştu!', ephemeral: true });
-            } else {
-                await interaction.editReply('❌ Bir hata oluştu!');
+            if (interaction.deferred) {
+                return await interaction.editReply('❌ Bir hata oluştu!');
             }
         }
     }
