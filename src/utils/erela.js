@@ -9,6 +9,8 @@ export function createErelaManager(client) {
                 port: parseInt(process.env.LAVALINK_PORT) || 2333,
                 password: process.env.LAVALINK_PASSWORD || 'youshallnotpass',
                 secure: process.env.LAVALINK_SECURE === 'true' || false,
+                retryAmount: 5,
+                retryDelay: 5000,
             }
         ],
         send: (id, payload) => {
@@ -20,6 +22,8 @@ export function createErelaManager(client) {
         useUnresolvedData: true,
         clientName: 'ShlimazlBot',
         restTimeout: 30000,
+        reconnectTries: 5,
+        reconnectInterval: 5000,
     });
 
     // Node bağlantı olayları
@@ -98,6 +102,14 @@ export function createErelaManager(client) {
 
     manager.on('error', (error) => {
         console.error('❌ Lavalink hatası:', error);
+    });
+
+    manager.on('connectionError', (node, error) => {
+        console.error(`❌ Bağlantı hatası [${node.options.identifier}]:`, error);
+    });
+
+    manager.on('socketError', (node, error) => {
+        console.error(`❌ Socket hatası [${node.options.identifier}]:`, error);
     });
 
     // Bağlantıyı başlat
