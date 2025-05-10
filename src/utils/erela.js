@@ -1,5 +1,7 @@
 import { Manager } from 'erela.js';
 import { Client } from 'discord.js';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 
 export function createErelaManager(client) {
     const manager = new Manager({
@@ -8,112 +10,57 @@ export function createErelaManager(client) {
                 host: process.env.LAVALINK_HOST || 'localhost',
                 port: parseInt(process.env.LAVALINK_PORT) || 2333,
                 password: process.env.LAVALINK_PASSWORD || 'youshallnotpass',
-                secure: process.env.LAVALINK_SECURE === 'true' || false,
+                secure: process.env.LAVALINK_SECURE === 'true',
                 retryAmount: 5,
                 retryDelay: 5000,
+                reconnectTries: 3,
+                reconnectInterval: 5000
             }
         ],
-        send: (id, payload) => {
-            const guild = client.guilds.cache.get(id);
-            if (guild) guild.shard.send(payload);
-        },
         autoPlay: true,
         defaultSearchPlatform: 'youtube',
         useUnresolvedData: true,
-        clientName: 'ShlimazlBot',
-        restTimeout: 30000,
-        reconnectTries: 5,
-        reconnectInterval: 5000,
+        clientName: 'benbotdegilimbotu',
+        send: (id, payload) => {
+            const guild = client.guilds.cache.get(id);
+            if (guild) guild.shard.send(payload);
+        }
     });
 
-    // Node bağlantı olayları
     manager.on('nodeConnect', node => {
-        console.log(`✅ Lavalink Node bağlandı: ${node.options.identifier}`);
+        console.log(`🟢 Lavalink Node bağlandı: ${node.options.identifier}`);
     });
 
     manager.on('nodeError', (node, error) => {
-        console.error(`❌ Lavalink Node hatası: ${node.options.identifier}`, error);
+        console.error(`🔴 Lavalink Node hatası [${node.options.identifier}]:`, error);
     });
 
-    manager.on('nodeDisconnect', (node, reason) => {
-        console.warn(`⚠️ Lavalink Node bağlantısı kesildi: ${node.options.identifier}`, reason);
+    manager.on('nodeDisconnect', node => {
+        console.log(`🟡 Lavalink Node bağlantısı kesildi: ${node.options.identifier}`);
     });
 
-    // Müzik olayları
     manager.on('trackStart', (player, track) => {
-        const channel = client.channels.cache.get(player.textChannel);
-        if (channel) {
-            channel.send({
-                embeds: [{
-                    title: '🎵 Şimdi Çalıyor',
-                    description: `**${track.title}**`,
-                    color: 0x00FF00,
-                    fields: [
-                        { name: '👤 Sanatçı', value: track.author, inline: true },
-                        { name: '⏱️ Süre', value: track.duration, inline: true }
-                    ],
-                    thumbnail: { url: track.thumbnail }
-                }]
-            });
-        }
+        console.log(`🎵 Şarkı başladı: ${track.title}`);
     });
 
-    manager.on('queueEnd', (player) => {
-        const channel = client.channels.cache.get(player.textChannel);
-        if (channel) {
-            channel.send({
-                embeds: [{
-                    title: '⏹️ Sıra Bitti',
-                    description: 'Sıradaki tüm şarkılar çalındı!',
-                    color: 0xFF0000
-                }]
-            });
-        }
+    manager.on('queueEnd', player => {
+        console.log(`⏹️ Sıra bitti: ${player.guild}`);
         player.destroy();
     });
 
     manager.on('trackError', (player, track, error) => {
-        console.error(`❌ Şarkı çalma hatası: ${error.message}`);
-        const channel = client.channels.cache.get(player.textChannel);
-        if (channel) {
-            channel.send({
-                embeds: [{
-                    title: '❌ Hata',
-                    description: `Şarkı çalınırken bir hata oluştu: ${error.message}`,
-                    color: 0xFF0000
-                }]
-            });
-        }
+        console.error(`🔴 Şarkı hatası [${player.guild}]:`, error);
+        player.textChannel?.send(`❌ Şarkı çalınırken bir hata oluştu: ${error.message}`).catch(console.error);
     });
 
     manager.on('playerError', (player, error) => {
-        console.error(`❌ Player hatası [${player.guild}]:`, error);
-        const channel = client.channels.cache.get(player.textChannel);
-        if (channel) {
-            channel.send({
-                embeds: [{
-                    title: '❌ Player Hatası',
-                    description: `Bir hata oluştu: ${error.message}`,
-                    color: 0xFF0000
-                }]
-            });
-        }
+        console.error(`🔴 Player hatası [${player.guild}]:`, error);
+        player.textChannel?.send(`❌ Oynatma hatası: ${error.message}`).catch(console.error);
     });
 
     manager.on('error', (error) => {
-        console.error('❌ Lavalink hatası:', error);
+        console.error('🔴 Lavalink hatası:', error);
     });
-
-    manager.on('connectionError', (node, error) => {
-        console.error(`❌ Bağlantı hatası [${node.options.identifier}]:`, error);
-    });
-
-    manager.on('socketError', (node, error) => {
-        console.error(`❌ Socket hatası [${node.options.identifier}]:`, error);
-    });
-
-    // Bağlantıyı başlat
-    manager.connect(client);
 
     return manager;
 } 
