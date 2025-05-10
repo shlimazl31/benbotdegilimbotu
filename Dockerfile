@@ -16,5 +16,5 @@ RUN npm install --legacy-peer-deps
 # Diğer dosyaları kopyala
 COPY . .
 
-# Uygulamayı başlat
+# Başlat
 CMD ["npm", "start"] 
