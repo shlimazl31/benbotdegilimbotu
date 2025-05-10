@@ -16,6 +16,10 @@ export function createErelaManager(client) {
             if (guild) guild.shard.send(payload);
         },
         autoPlay: true,
+        defaultSearchPlatform: 'youtube',
+        useUnresolvedData: true,
+        clientName: 'ShlimazlBot',
+        restTimeout: 30000,
     });
 
     // Node bağlantı olayları
@@ -90,6 +94,10 @@ export function createErelaManager(client) {
                 }]
             });
         }
+    });
+
+    manager.on('error', (error) => {
+        console.error('❌ Lavalink hatası:', error);
     });
 
     // Bağlantıyı başlat
