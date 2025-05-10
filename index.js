@@ -11,6 +11,7 @@ import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import playdl from "play-dl";
+import fs from "fs";
 
 // crypto için global polyfill
 if (!globalThis.crypto) {
@@ -156,6 +157,11 @@ client.manager = createErelaManager(client);
 
 // YouTube cookie dosyasını yükle
 await playdl.setCookie("./www.youtube.com_cookies.txt");
+if (!fs.existsSync("./www.youtube.com_cookies.txt")) {
+  console.error("YouTube cookie dosyası bulunamadı!");
+} else {
+  console.log("YouTube cookie dosyası bulundu ve yüklendi.");
+}
 
 // Bot başlatma ve giriş
 client.login(process.env.TOKEN);
