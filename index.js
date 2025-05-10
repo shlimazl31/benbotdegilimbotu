@@ -10,6 +10,7 @@ import { createErelaManager } from './src/utils/erela.js';
 import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
+import playdl from "play-dl";
 
 // crypto için global polyfill
 if (!globalThis.crypto) {
@@ -152,6 +153,9 @@ try {
 
 // Erela.js'i başlat
 client.manager = createErelaManager(client);
+
+// YouTube cookie dosyasını yükle
+await playdl.setCookie("./www.youtube.com_cookies.txt");
 
 // Bot başlatma ve giriş
 client.login(process.env.TOKEN);
