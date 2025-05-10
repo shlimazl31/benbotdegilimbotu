@@ -20,11 +20,15 @@ export function createErelaManager(client) {
 
     // Node bağlantı olayları
     manager.on('nodeConnect', node => {
-        console.log(`Lavalink Node bağlandı: ${node.options.identifier}`);
+        console.log(`✅ Lavalink Node bağlandı: ${node.options.identifier}`);
     });
 
     manager.on('nodeError', (node, error) => {
-        console.error(`Lavalink Node hatası: ${node.options.identifier}`, error);
+        console.error(`❌ Lavalink Node hatası: ${node.options.identifier}`, error);
+    });
+
+    manager.on('nodeDisconnect', (node, reason) => {
+        console.warn(`⚠️ Lavalink Node bağlantısı kesildi: ${node.options.identifier}`, reason);
     });
 
     // Müzik olayları
@@ -61,7 +65,7 @@ export function createErelaManager(client) {
     });
 
     manager.on('trackError', (player, track, error) => {
-        console.error(`Şarkı çalma hatası: ${error.message}`);
+        console.error(`❌ Şarkı çalma hatası: ${error.message}`);
         const channel = client.channels.cache.get(player.textChannel);
         if (channel) {
             channel.send({
@@ -75,7 +79,7 @@ export function createErelaManager(client) {
     });
 
     manager.on('playerError', (player, error) => {
-        console.error(`Player hatası [${player.guild}]:`, error);
+        console.error(`❌ Player hatası [${player.guild}]:`, error);
         const channel = client.channels.cache.get(player.textChannel);
         if (channel) {
             channel.send({
@@ -87,6 +91,9 @@ export function createErelaManager(client) {
             });
         }
     });
+
+    // Bağlantıyı başlat
+    manager.connect(client);
 
     return manager;
 } 
