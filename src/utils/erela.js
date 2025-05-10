@@ -74,5 +74,19 @@ export function createErelaManager(client) {
         }
     });
 
+    manager.on('playerError', (player, error) => {
+        console.error(`Player hatası [${player.guild}]:`, error);
+        const channel = client.channels.cache.get(player.textChannel);
+        if (channel) {
+            channel.send({
+                embeds: [{
+                    title: '❌ Player Hatası',
+                    description: `Bir hata oluştu: ${error.message}`,
+                    color: 0xFF0000
+                }]
+            });
+        }
+    });
+
     return manager;
 } 
