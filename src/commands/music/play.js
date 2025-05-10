@@ -1,7 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
-import { EmbedBuilder } from 'discord.js';
-import { useMainPlayer } from 'discord-player';
-import { checkQueueState, updateQueueState } from '../../utils/player.js';
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 
 export const command = {
     data: new SlashCommandBuilder()
@@ -14,7 +11,6 @@ export const command = {
 
     async execute(interaction) {
         try {
-            // Kullanıcının ses kanalında olup olmadığını kontrol et
             if (!interaction.member.voice.channel) {
                 const errorEmbed = new EmbedBuilder()
                     .setTitle('❌ Hata')
@@ -23,7 +19,6 @@ export const command = {
                 return await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
             }
 
-            // Bot'un ses kanalına katılma izni olup olmadığını kontrol et
             const permissions = interaction.member.voice.channel.permissionsFor(interaction.client.user);
             if (!permissions.has('Connect') || !permissions.has('Speak')) {
                 const errorEmbed = new EmbedBuilder()
@@ -33,7 +28,6 @@ export const command = {
                 return await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
             }
 
-            // Yükleniyor mesajı
             const loadingEmbed = new EmbedBuilder()
                 .setTitle('🔍 Aranıyor...')
                 .setDescription('Şarkı aranıyor...')
@@ -41,108 +35,60 @@ export const command = {
             await interaction.reply({ embeds: [loadingEmbed] });
 
             const query = interaction.options.getString('şarkı');
-            const player = useMainPlayer();
-            const queue = player.nodes.get(interaction.guild.id);
+            const player = interaction.client.manager.create({
+                guild: interaction.guild.id,
+                voiceChannel: interaction.member.voice.channel.id,
+                textChannel: interaction.channel.id,
+                selfDeafen: true,
+            });
 
-            // Kuyruk durumunu kontrol et
-            const queueState = checkQueueState(interaction.guild.id);
-            if (queueState && queueState.isFull) {
+            const res = await player.search(query, interaction.user);
+            if (!res || !res.tracks.length) {
                 const errorEmbed = new EmbedBuilder()
                     .setTitle('❌ Hata')
-                    .setDescription('Kuyruk dolu! Lütfen daha sonra tekrar deneyin.')
+                    .setDescription('Şarkı bulunamadı!')
                     .setColor('#FF0000');
                 return await interaction.editReply({ embeds: [errorEmbed] });
             }
 
-            try {
-                // Şarkıyı çal
-                const { track } = await player.play(
-                    interaction.member.voice.channel,
-                    query,
-                    {
-                        nodeOptions: {
-                            metadata: {
-                                channel: interaction.channel,
-                                guildId: interaction.guild.id,
-                                requestedBy: interaction.user
-                            },
-                            leaveOnEmpty: true,
-                            leaveOnEnd: true,
-                            leaveOnStop: true,
-                            leaveOnEmptyCooldown: 300000, // 5 dakika
-                            leaveOnEndCooldown: 300000, // 5 dakika
-                            leaveOnStopCooldown: 300000, // 5 dakika
-                            volume: 80,
-                            maxSize: 100
-                        }
-                    }
-                );
-
-                // Kuyruk durumunu güncelle
-                updateQueueState(interaction.guild.id, {
-                    isPlaying: true,
-                    currentTrack: track,
-                    lastActivity: Date.now()
-                });
-
-                // Başarılı mesajı
+            if (res.loadType === 'PLAYLIST_LOADED') {
+                player.queue.add(res.tracks);
+                const successEmbed = new EmbedBuilder()
+                    .setTitle('🎵 Playlist Eklendi')
+                    .setDescription(`**${res.playlist.name}** playlistinden **${res.tracks.length}** şarkı sıraya eklendi!`)
+                    .setColor('#00FF00')
+                    .setThumbnail(res.tracks[0].thumbnail)
+                    .addFields(
+                        { name: '👤 Oluşturan', value: res.playlist.author || 'Bilinmiyor', inline: true },
+                        { name: '🎵 Toplam Şarkı', value: res.tracks.length.toString(), inline: true }
+                    );
+                await interaction.editReply({ embeds: [successEmbed] });
+            } else {
+                player.queue.add(res.tracks[0]);
                 const successEmbed = new EmbedBuilder()
                     .setTitle('🎵 Şarkı Eklendi')
-                    .setDescription(`**${track.title}** kuyruğa eklendi!`)
+                    .setDescription(`**${res.tracks[0].title}** kuyruğa eklendi!`)
                     .setColor('#00FF00')
-                    .setThumbnail(track.thumbnail)
+                    .setThumbnail(res.tracks[0].thumbnail)
                     .addFields(
-                        { name: '🎤 Sanatçı', value: track.author, inline: true },
-                        { name: '⏱️ Süre', value: track.duration, inline: true },
-                        { name: '🔊 Ses Seviyesi', value: '80%', inline: true }
+                        { name: '🎤 Sanatçı', value: res.tracks[0].author, inline: true },
+                        { name: '⏱️ Süre', value: res.tracks[0].duration, inline: true },
+                        { name: '🔊 Ses Seviyesi', value: '100%', inline: true }
                     )
                     .setFooter({ text: `İsteyen: ${interaction.user.tag}` });
-
                 await interaction.editReply({ embeds: [successEmbed] });
-
-            } catch (error) {
-                console.error('Şarkı çalma hatası:', error);
-                
-                // Kuyruk durumunu güncelle
-                updateQueueState(interaction.guild.id, {
-                    isPlaying: false,
-                    error: error.message
-                });
-
-                let errorMessage = 'Şarkı çalınırken bir hata oluştu!';
-                
-                if (error.message.includes('No results found')) {
-                    errorMessage = 'Şarkı bulunamadı!';
-                } else if (error.message.includes('Could not connect')) {
-                    errorMessage = 'Ses kanalına bağlanılamadı!';
-                }
-
-                const errorEmbed = new EmbedBuilder()
-                    .setTitle('❌ Hata')
-                    .setDescription(errorMessage)
-                    .setColor('#FF0000');
-                
-                await interaction.editReply({ embeds: [errorEmbed] });
             }
 
+            if (!player.playing && !player.paused && !player.queue.size) {
+                player.play();
+            }
         } catch (error) {
-            console.error('Play komutu hatası:', error);
-            
-            // Eğer etkileşim henüz yanıtlanmamışsa
-            if (!interaction.replied && !interaction.deferred) {
-                const errorEmbed = new EmbedBuilder()
-                    .setTitle('❌ Sistem Hatası')
-                    .setDescription('Bir hata oluştu! Lütfen daha sonra tekrar deneyin.')
-                    .setColor('#FF0000');
-                await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
-            } else {
-                // Etkileşim zaten yanıtlanmışsa, mesajı düzenle
-                const errorEmbed = new EmbedBuilder()
-                    .setTitle('❌ Sistem Hatası')
-                    .setDescription('Bir hata oluştu! Lütfen daha sonra tekrar deneyin.')
-                    .setColor('#FF0000');
-                await interaction.editReply({ embeds: [errorEmbed] });
-            }
+            console.error('Şarkı çalma hatası:', error);
+            const errorEmbed = new EmbedBuilder()
+                .setTitle('❌ Hata')
+                .setDescription(`Şarkı çalınırken bir hata oluştu: ${error.message}`)
+                .setColor('#FF0000');
+            await interaction.editReply({ embeds: [errorEmbed] });
         }
     }
 };

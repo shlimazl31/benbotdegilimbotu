@@ -1,5 +1,4 @@
 import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
-import { getPlayer } from '../../utils/player.js';
 
 // Her sunucu için son nowplaying mesajını tutacak Map
 const lastNowPlayingMessages = new Map();
@@ -17,17 +16,16 @@ export const command = {
                 try { await lastMsg.delete().catch(() => {}); } catch {}
             }
 
-            const player = await getPlayer(interaction.client);
-            const queue = player.nodes.get(interaction.guildId);
+            const player = interaction.client.manager.get(interaction.guild.id);
 
-            if (!queue || !queue.isPlaying()) {
+            if (!player) {
                 return await interaction.reply({
                     content: '❌ Şu anda çalan bir şarkı yok!',
                     ephemeral: true
                 });
             }
 
-            const track = queue.currentTrack;
+            const track = player.queue.current;
             if (!track) {
                 return await interaction.reply({
                     content: '❌ Şu anda çalan bir şarkı yok!',
@@ -46,31 +44,24 @@ export const command = {
             else if (title.includes('jazz')) color = '#8B4513';
             else if (title.includes('electronic') || title.includes('edm')) color = '#00FFFF';
 
-            const progress = queue.node.createProgressBar();
-            const timestamp = queue.node.getTimestamp();
-
             const embed = new EmbedBuilder()
                 .setTitle('🎵 Şimdi Çalıyor')
                 .setDescription(`**${track.title}**`)
+                .setColor(color)
                 .addFields(
                     { name: '👤 Sanatçı', value: track.author, inline: true },
                     { name: '⏱️ Süre', value: track.duration, inline: true },
-                    { name: '🔊 Ses', value: `${queue.node.volume}%`, inline: true },
-                    { name: '📊 İlerleme', value: progress, inline: false }
+                    { name: '🔊 Ses Seviyesi', value: `${player.volume}%`, inline: true }
                 )
                 .setThumbnail(track.thumbnail)
-                .setColor(color)
-                .setFooter({ 
-                    text: track.requestedBy ? `İsteyen: ${track.requestedBy.tag}` : 'İsteyen: Bilinmiyor',
-                    iconURL: track.requestedBy?.displayAvatarURL() || interaction.client.user.displayAvatarURL()
-                });
+                .setFooter({ text: `İsteyen: ${track.requester?.tag || 'Bilinmiyor'}` });
 
             // Kontrol butonları
             const row = new ActionRowBuilder()
                 .addComponents(
                     new ButtonBuilder()
                         .setCustomId('pause')
-                        .setLabel(queue.node.isPaused() ? '▶️ Devam Et' : '⏸️ Duraklat')
+                        .setLabel(player.paused ? '▶️ Devam Et' : '⏸️ Duraklat')
                         .setStyle(ButtonStyle.Primary),
                     new ButtonBuilder()
                         .setCustomId('skip')
@@ -78,8 +69,8 @@ export const command = {
                         .setStyle(ButtonStyle.Secondary),
                     new ButtonBuilder()
                         .setCustomId('loop')
-                        .setLabel(queue.repeatMode === 0 ? '🔁 Tekrarla' : '🔁 Tekrarı Kapat')
-                        .setStyle(queue.repeatMode === 0 ? ButtonStyle.Secondary : ButtonStyle.Success),
+                        .setLabel(player.trackRepeat ? '🔁 Tekrarı Kapat' : '🔁 Tekrarla')
+                        .setStyle(player.trackRepeat ? ButtonStyle.Success : ButtonStyle.Secondary),
                     new ButtonBuilder()
                         .setCustomId('shuffle')
                         .setLabel('🔀 Karıştır')
@@ -112,8 +103,8 @@ export const command = {
                     });
                 }
 
-                const queue = player.nodes.get(i.guildId);
-                if (!queue) {
+                const player = interaction.client.manager.get(i.guildId);
+                if (!player) {
                     return await i.reply({
                         content: '❌ Şu anda çalan bir şarkı yok!',
                         ephemeral: true
@@ -122,14 +113,14 @@ export const command = {
 
                 switch (i.customId) {
                     case 'pause':
-                        queue.node.setPaused(!queue.node.isPaused());
+                        player.pause(!player.paused);
                         await i.update({
                             components: [
                                 new ActionRowBuilder()
                                     .addComponents(
                                         new ButtonBuilder()
                                             .setCustomId('pause')
-                                            .setLabel(queue.node.isPaused() ? '▶️ Devam Et' : '⏸️ Duraklat')
+                                            .setLabel(player.paused ? '▶️ Devam Et' : '⏸️ Duraklat')
                                             .setStyle(ButtonStyle.Primary),
                                         new ButtonBuilder()
                                             .setCustomId('skip')
@@ -137,8 +128,8 @@ export const command = {
                                             .setStyle(ButtonStyle.Secondary),
                                         new ButtonBuilder()
                                             .setCustomId('loop')
-                                            .setLabel(queue.repeatMode === 0 ? '🔁 Tekrarla' : '🔁 Tekrarı Kapat')
-                                            .setStyle(queue.repeatMode === 0 ? ButtonStyle.Secondary : ButtonStyle.Success),
+                                            .setLabel(player.trackRepeat ? '🔁 Tekrarı Kapat' : '🔁 Tekrarla')
+                                            .setStyle(player.trackRepeat ? ButtonStyle.Success : ButtonStyle.Secondary),
                                         new ButtonBuilder()
                                             .setCustomId('shuffle')
                                             .setLabel('🔀 Karıştır')
@@ -153,21 +144,21 @@ export const command = {
                         break;
 
                     case 'skip':
-                        queue.node.skip();
+                        player.stop();
                         await i.update({
                             components: []
                         });
                         break;
 
                     case 'loop':
-                        queue.setRepeatMode(queue.repeatMode === 0 ? 1 : 0);
+                        player.setTrackRepeat(!player.trackRepeat);
                         await i.update({
                             components: [
                                 new ActionRowBuilder()
                                     .addComponents(
                                         new ButtonBuilder()
                                             .setCustomId('pause')
-                                            .setLabel(queue.node.isPaused() ? '▶️ Devam Et' : '⏸️ Duraklat')
+                                            .setLabel(player.paused ? '▶️ Devam Et' : '⏸️ Duraklat')
                                             .setStyle(ButtonStyle.Primary),
                                         new ButtonBuilder()
                                             .setCustomId('skip')
@@ -175,8 +166,8 @@ export const command = {
                                             .setStyle(ButtonStyle.Secondary),
                                         new ButtonBuilder()
                                             .setCustomId('loop')
-                                            .setLabel(queue.repeatMode === 0 ? '🔁 Tekrarla' : '🔁 Tekrarı Kapat')
-                                            .setStyle(queue.repeatMode === 0 ? ButtonStyle.Secondary : ButtonStyle.Success),
+                                            .setLabel(player.trackRepeat ? '🔁 Tekrarı Kapat' : '🔁 Tekrarla')
+                                            .setStyle(player.trackRepeat ? ButtonStyle.Success : ButtonStyle.Secondary),
                                         new ButtonBuilder()
                                             .setCustomId('shuffle')
                                             .setLabel('🔀 Karıştır')
@@ -191,14 +182,15 @@ export const command = {
                         break;
 
                     case 'shuffle':
-                        queue.tracks.shuffle();
-                        await i.update({
-                            components: []
+                        player.queue.shuffle();
+                        await i.reply({
+                            content: '🔀 Sıra karıştırıldı!',
+                            ephemeral: true
                         });
                         break;
 
                     case 'stop':
-                        queue.delete();
+                        player.destroy();
                         await i.update({
                             components: []
                         });
@@ -206,68 +198,17 @@ export const command = {
                 }
             });
 
-            collector.on('end', () => {
-                message.edit({
-                    components: []
-                }).catch(() => {});
-            });
-
-            // Her 10 saniyede bir mesajı güncelle
-            const updateInterval = setInterval(async () => {
-                try {
-                    const currentQueue = player.nodes.get(interaction.guildId);
-                    if (!currentQueue || !currentQueue.isPlaying()) {
-                        clearInterval(updateInterval);
-                        return;
-                    }
-
-                    const currentTrack = currentQueue.currentTrack;
-                    if (!currentTrack) {
-                        clearInterval(updateInterval);
-                        return;
-                    }
-
-                    const progress = currentQueue.node.createProgressBar();
-                    const timestamp = currentQueue.node.getTimestamp();
-
-                    const updatedEmbed = new EmbedBuilder()
-                        .setTitle('🎵 Şimdi Çalıyor')
-                        .setDescription(`**${currentTrack.title}**`)
-                        .addFields(
-                            { name: '👤 Sanatçı', value: currentTrack.author, inline: true },
-                            { name: '⏱️ Süre', value: currentTrack.duration, inline: true },
-                            { name: '🔊 Ses', value: `${currentQueue.node.volume}%`, inline: true },
-                            { name: '📊 İlerleme', value: progress, inline: false }
-                        )
-                        .setThumbnail(currentTrack.thumbnail)
-                        .setColor(color)
-                        .setFooter({ 
-                            text: currentTrack.requestedBy ? `İsteyen: ${currentTrack.requestedBy.tag}` : 'İsteyen: Bilinmiyor',
-                            iconURL: currentTrack.requestedBy?.displayAvatarURL() || interaction.client.user.displayAvatarURL()
-                        });
-
-                    await message.edit({
-                        embeds: [updatedEmbed]
-                    });
-                } catch (error) {
-                    console.error('Mesaj güncelleme hatası:', error);
-                    clearInterval(updateInterval);
-                }
-            }, 10000);
-
-            // 15 dakika sonra güncellemeyi durdur
+            // 5 dakika sonra butonları kaldır
             setTimeout(() => {
-                clearInterval(updateInterval);
-            }, 15 * 60 * 1000);
-
+                message.edit({ components: [] }).catch(() => {});
+            }, 300000);
         } catch (error) {
             console.error('Nowplaying hatası:', error);
-            if (!interaction.replied && !interaction.deferred) {
-                await interaction.reply({
-                    content: '❌ Bir hata oluştu!',
-                    ephemeral: true
-                });
-            }
+            const embed = new EmbedBuilder()
+                .setTitle('❌ Hata')
+                .setDescription('Bir hata oluştu!')
+                .setColor('#FF0000');
+            await interaction.reply({ embeds: [embed], ephemeral: true });
         }
     }
 }; 

@@ -1,5 +1,4 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
-import { getPlayer } from '../../utils/player.js';
 
 export const command = {
     data: new SlashCommandBuilder()
@@ -8,10 +7,9 @@ export const command = {
 
     async execute(interaction) {
         try {
-            const player = await getPlayer(interaction.client);
-            const queue = player.nodes.get(interaction.guildId);
+            const player = interaction.client.manager.get(interaction.guild.id);
 
-            if (!queue || !queue.isPlaying()) {
+            if (!player) {
                 const embed = new EmbedBuilder()
                     .setTitle('❌ Şu Anda Şarkı Yok')
                     .setDescription('Şu anda çalan bir şarkı yok!')
@@ -19,7 +17,15 @@ export const command = {
                 return await interaction.reply({ embeds: [embed], ephemeral: true });
             }
 
-            queue.node.resume();
+            if (player.playing) {
+                const embed = new EmbedBuilder()
+                    .setTitle('❌ Şarkı Zaten Çalıyor')
+                    .setDescription('Şarkı zaten çalıyor!')
+                    .setColor('#FF0000');
+                return await interaction.reply({ embeds: [embed], ephemeral: true });
+            }
+
+            player.pause(false);
             const embed = new EmbedBuilder()
                 .setTitle('▶️ Devam Ediyor')
                 .setDescription('Şarkı devam ediyor!')

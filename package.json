@@ -28,6 +28,7 @@
     "discord-player-youtubei": "^1.4.5",
     "discord.js": "^14.14.1",
     "dotenv": "^16.4.5",
+    "erela.js": "^2.4.0",
     "express": "^5.1.0",
     "express-rate-limit": "^7.5.0",
     "ffmpeg-static": "^5.2.0",

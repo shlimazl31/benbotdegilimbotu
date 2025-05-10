@@ -1,5 +1,4 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
-import { getPlayer } from '../../utils/player.js';
 import { hasDjRole } from './dj.js';
 
 export const command = {
@@ -25,10 +24,17 @@ export const command = {
                 return await interaction.reply({ embeds: [embed], ephemeral: true });
             }
 
-            const player = await getPlayer(interaction.client);
-            const queue = player.nodes.get(interaction.guildId);
+            const player = interaction.client.manager.get(interaction.guild.id);
 
-            if (!queue || !queue.tracks.size) {
+            if (!player) {
+                const embed = new EmbedBuilder()
+                    .setTitle('❌ Şu Anda Şarkı Yok')
+                    .setDescription('Şu anda çalan bir şarkı yok!')
+                    .setColor('#FF0000');
+                return await interaction.reply({ embeds: [embed], ephemeral: true });
+            }
+
+            if (!player.queue.size) {
                 const embed = new EmbedBuilder()
                     .setTitle('❌ Sıra Boş')
                     .setDescription('Sırada karıştırılacak şarkı yok!')
@@ -36,14 +42,14 @@ export const command = {
                 return await interaction.reply({ embeds: [embed], ephemeral: true });
             }
 
-            queue.tracks.shuffle();
+            player.queue.shuffle();
             const embed = new EmbedBuilder()
                 .setTitle('🔀 Sıra Karıştırıldı')
-                .setDescription(`${queue.tracks.size} şarkı karıştırıldı!`)
+                .setDescription(`${player.queue.size} şarkı karıştırıldı!`)
                 .setColor('#00FF00');
             return await interaction.reply({ embeds: [embed] });
         } catch (error) {
-            console.error('Shuffle komutu hatası:', error);
+            console.error('Shuffle hatası:', error);
             const embed = new EmbedBuilder()
                 .setTitle('❌ Hata')
                 .setDescription('Bir hata oluştu!')

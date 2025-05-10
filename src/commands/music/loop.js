@@ -1,6 +1,4 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
-import { getPlayer } from '../../utils/player.js';
-import { QueueRepeatMode } from 'discord-player';
 import { hasDjRole } from './dj.js';
 
 export const command = {
@@ -35,19 +33,32 @@ export const command = {
                 return await interaction.reply({ embeds: [embed], ephemeral: true });
             }
 
-            const player = await getPlayer(interaction.client);
-            const queue = player.nodes.get(interaction.guildId);
+            const player = interaction.client.manager.get(interaction.guild.id);
 
-            if (!queue || !queue.isPlaying()) {
+            if (!player) {
                 const embed = new EmbedBuilder()
-                    .setTitle('❌ Şarkı Çalmıyor')
+                    .setTitle('❌ Şu Anda Şarkı Yok')
                     .setDescription('Şu anda çalan bir şarkı yok!')
                     .setColor('#FF0000');
                 return await interaction.reply({ embeds: [embed], ephemeral: true });
             }
 
             const mode = parseInt(interaction.options.getString('mod'));
-            queue.setRepeatMode(mode);
+            
+            switch (mode) {
+                case 0: // Kapalı
+                    player.setTrackRepeat(false);
+                    player.setQueueRepeat(false);
+                    break;
+                case 1: // Şarkı
+                    player.setTrackRepeat(true);
+                    player.setQueueRepeat(false);
+                    break;
+                case 2: // Sıra
+                    player.setTrackRepeat(false);
+                    player.setQueueRepeat(true);
+                    break;
+            }
 
             const modeText = mode === 0 ? 'Kapalı' : mode === 1 ? 'Şarkı' : 'Sıra';
             const embed = new EmbedBuilder()

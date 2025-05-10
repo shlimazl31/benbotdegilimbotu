@@ -1,5 +1,4 @@
 import { ActivityType } from 'discord.js';
-import { getPlayer } from '../utils/player.js';
 
 export const event = {
     name: 'ready',
@@ -8,9 +7,6 @@ export const event = {
         try {
             console.log(`${client.user.tag} olarak giriş yapıldı!`);
             
-            // Player'ı başlat
-            await getPlayer(client);
-
             // Bot status'unu ayarla
             client.user.setPresence({
                 activities: [{ 

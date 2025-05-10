@@ -6,7 +6,7 @@ import { join } from 'path';
 import { config } from 'dotenv';
 import { REST, Routes } from 'discord.js';
 import { webcrypto } from 'node:crypto';
-import { getPlayer } from './src/utils/player.js';
+import { createErelaManager } from './src/utils/erela.js';
 import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
@@ -45,10 +45,6 @@ process.on('SIGINT', () => {
     console.log('SIGINT sinyali alındı. Graceful shutdown başlatılıyor...');
     client.destroy();
     process.exit(0);
-});
-
-process.on('unhandledRejection', (error) => {
-    console.error('Yakalanmamış Promise Reddi:', error);
 });
 
 process.on('uncaughtException', (error) => {
@@ -154,18 +150,10 @@ try {
     console.error('Komut/Event yükleme hatası:', error);
 }
 
-// Player'ı başlat
-async function initializePlayer(client) {
-    try {
-        await getPlayer(client);
-        console.log('✅ Discord Player başlatıldı');
-    } catch (error) {
-        console.error('❌ Discord Player başlatma hatası:', error);
-    }
-}
+// Erela.js'i başlat
+client.manager = createErelaManager(client);
 
 // Bot başlatma ve giriş
-await initializePlayer(client);
 client.login(process.env.TOKEN);
 
 // Express sunucusu oluştur
@@ -185,9 +173,6 @@ app.use(cors({
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
-app.use(express.json());
-app.use(limiter);
 
 // Bot durumu endpoint'i
 app.get('/api/bot/status', (req, res) => {
@@ -219,8 +204,7 @@ app.post('/api/bot/music/:guildId/:action', async (req, res) => {
         return res.status(404).json({ error: 'Sunucu bulunamadı' });
     }
 
-    const player = getPlayer(client);
-    const queue = player.nodes.get(guildId);
+    const player = client.manager.get(guildId);
 
     try {
         switch (action) {
@@ -228,13 +212,13 @@ app.post('/api/bot/music/:guildId/:action', async (req, res) => {
                 // Müzik çalma işlemleri
                 break;
             case 'pause':
-                if (queue) queue.node.pause();
+                if (player) player.pause(true);
                 break;
             case 'resume':
-                if (queue) queue.node.resume();
+                if (player) player.pause(false);
                 break;
             case 'stop':
-                if (queue) queue.delete();
+                if (player) player.destroy();
                 break;
             default:
                 return res.status(400).json({ error: 'Geçersiz işlem' });
