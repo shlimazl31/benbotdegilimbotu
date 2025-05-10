@@ -76,7 +76,7 @@ export const command = {
             console.error('Join komutu hatası:', error);
             const embed = new EmbedBuilder()
                 .setTitle('❌ Hata')
-                .setDescription('Bir hata oluştu!')
+                .setDescription('Bir hata oluştu.')
                 .setColor('#FF0000');
             return await interaction.reply({ embeds: [embed], ephemeral: true });
         }
