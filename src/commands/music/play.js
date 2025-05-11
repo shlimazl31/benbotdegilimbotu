@@ -12,27 +12,21 @@ export const command = {
                 .setRequired(true)),
 
     async execute(interaction) {
+        await interaction.deferReply();
+
         try {
             const query = interaction.options.getString('query');
             const member = interaction.member;
             const channel = member.voice.channel;
 
             if (!channel) {
-                return await interaction.reply({
-                    content: '❌ Bir ses kanalında olmalısın!',
-                    ephemeral: true
-                });
+                return await interaction.editReply('❌ Bir ses kanalında olmalısın!');
             }
 
             const permissions = channel.permissionsFor(interaction.client.user);
             if (!permissions.has('Connect') || !permissions.has('Speak')) {
-                return await interaction.reply({
-                    content: '❌ Ses kanalına bağlanma veya konuşma iznim yok!',
-                    ephemeral: true
-                });
+                return await interaction.editReply('❌ Ses kanalına bağlanma veya konuşma iznim yok!');
             }
-
-            await interaction.deferReply();
 
             const player = useMainPlayer();
             const searchResult = await player.search(query, {
@@ -64,25 +58,11 @@ export const command = {
                 return await interaction.editReply(`🎵 **${track.title}** şarkısı çalınıyor!`);
             } catch (error) {
                 console.error('Oynatma hatası:', error);
-                if (!interaction.replied && !interaction.deferred) {
-                    return await interaction.reply({
-                        content: '❌ Şarkı çalınırken bir hata oluştu!',
-                        ephemeral: true
-                    });
-                } else {
-                    return await interaction.editReply('❌ Şarkı çalınırken bir hata oluştu!');
-                }
+                return await interaction.editReply('❌ Şarkı çalınırken bir hata oluştu!');
             }
         } catch (error) {
             console.error('Play komutu hatası:', error);
-            if (!interaction.replied && !interaction.deferred) {
-                return await interaction.reply({
-                    content: '❌ Bir hata oluştu!',
-                    ephemeral: true
-                });
-            } else {
-                return await interaction.editReply('❌ Bir hata oluştu!');
-            }
+            return await interaction.editReply('❌ Bir hata oluştu!');
         }
     }
 };
