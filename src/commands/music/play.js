@@ -1,5 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { useMainPlayer } from 'discord-player';
+import playdl from 'play-dl';
 
 export const command = {
     data: new SlashCommandBuilder()
@@ -29,7 +30,9 @@ export const command = {
 
             const player = useMainPlayer();
             const searchResult = await player.search(query, {
-                requestedBy: interaction.user
+                requestedBy: interaction.user,
+                searchEngine: 'youtube',
+                fallbackSearchEngine: 'youtube'
             });
 
             if (!searchResult.hasTracks()) {

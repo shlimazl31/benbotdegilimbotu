@@ -10,7 +10,7 @@ import { createErelaManager } from './src/utils/erela.js';
 import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
-import playdl from "play-dl";
+import playdl from 'play-dl';
 import fs from "fs";
 
 // crypto için global polyfill
