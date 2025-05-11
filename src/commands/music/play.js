@@ -3,11 +3,21 @@ import { useMainPlayer } from 'discord-player';
 import playdl from 'play-dl';
 
 // Set up YouTube authentication
-playdl.setToken({
-    youtube: {
-        cookie: process.env.YOUTUBE_COOKIE
+const youtubeCookie = process.env.YOUTUBE_COOKIE;
+if (youtubeCookie) {
+    try {
+        playdl.setToken({
+            youtube: {
+                cookie: youtubeCookie
+            }
+        });
+        console.log('YouTube authentication configured successfully');
+    } catch (error) {
+        console.error('Failed to configure YouTube authentication:', error);
     }
-});
+} else {
+    console.warn('YOUTUBE_COOKIE environment variable is not set');
+}
 
 export const command = {
     data: new SlashCommandBuilder()
