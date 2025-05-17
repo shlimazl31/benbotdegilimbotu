@@ -155,6 +155,16 @@ try {
 // Erela.js'i başlat
 client.manager = createErelaManager(client);
 
+// Player event listeners
+client.manager.on('error', (error) => {
+    console.error('Player error:', error);
+});
+
+client.manager.on('playerError', (player, error) => {
+    console.error(`Player error in guild ${player.guild}:`, error);
+    player.textChannel?.send(`❌ Bir oynatma hatası oluştu: ${error.message}`).catch(console.error);
+});
+
 // YouTube cookie dosyasını yükle
 await playdl.setCookie("./www.youtube.com_cookies.txt");
 if (!fs.existsSync("./www.youtube.com_cookies.txt")) {
