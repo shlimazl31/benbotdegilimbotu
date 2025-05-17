@@ -29,9 +29,9 @@ export const command = {
                 .setRequired(true)),
 
     async execute(interaction) {
-        await interaction.deferReply();
-
         try {
+            await interaction.deferReply();
+
             const query = interaction.options.getString('query');
             const member = interaction.member;
             const channel = member.voice.channel;
@@ -50,18 +50,18 @@ export const command = {
             // Set up error handling for the player
             player.events.on('error', (queue, error) => {
                 console.error(`Player error: ${error.message}`);
-                queue.metadata.channel.send(`❌ Bir hata oluştu: ${error.message}`);
+                queue.metadata.channel.send(`❌ Bir hata oluştu: ${error.message}`).catch(console.error);
             });
 
             player.events.on('playerError', (queue, error) => {
                 console.error(`Player error: ${error.message}`);
-                queue.metadata.channel.send(`❌ Bir hata oluştu: ${error.message}`);
+                queue.metadata.channel.send(`❌ Bir hata oluştu: ${error.message}`).catch(console.error);
             });
 
             // Set up connection error handling
             player.events.on('connectionError', (queue, error) => {
                 console.error(`Connection error: ${error.message}`);
-                queue.metadata.channel.send(`❌ Bağlantı hatası: ${error.message}`);
+                queue.metadata.channel.send(`❌ Bağlantı hatası: ${error.message}`).catch(console.error);
             });
 
             const searchResult = await player.search(query, {
@@ -74,45 +74,52 @@ export const command = {
                 return await interaction.editReply('❌ Şarkı bulunamadı!');
             }
 
-            try {
-                const { track } = await player.play(channel, searchResult, {
-                    nodeOptions: {
-                        metadata: {
-                            channel: interaction.channel,
-                            client: interaction.guild.members.me,
-                            requestedBy: interaction.user
-                        },
-                        leaveOnEmpty: true,
-                        leaveOnEmptyCooldown: 300000,
-                        leaveOnEnd: true,
-                        leaveOnEndCooldown: 300000,
-                        volume: 80,
-                        // Add connection options
-                        connectionTimeout: 30000,
-                        selfDeaf: true,
-                        bufferingTimeout: 3000,
-                        // Add retry options
-                        retry: {
-                            maxRetries: 3,
-                            retryInterval: 5000
-                        }
+            const { track } = await player.play(channel, searchResult, {
+                nodeOptions: {
+                    metadata: {
+                        channel: interaction.channel,
+                        client: interaction.guild.members.me,
+                        requestedBy: interaction.user
+                    },
+                    leaveOnEmpty: true,
+                    leaveOnEmptyCooldown: 300000,
+                    leaveOnEnd: true,
+                    leaveOnEndCooldown: 300000,
+                    volume: 80,
+                    connectionTimeout: 30000,
+                    selfDeaf: true,
+                    bufferingTimeout: 3000,
+                    retry: {
+                        maxRetries: 3,
+                        retryInterval: 5000
                     }
-                });
+                }
+            });
 
-                return await interaction.editReply(`🎵 **${track.title}** şarkısı çalınıyor!`);
-            } catch (error) {
-                console.error('Oynatma hatası:', error);
-                if (error.message.includes('Sign in to confirm you\'re not a bot')) {
-                    return await interaction.editReply('❌ YouTube kimlik doğrulaması gerekiyor. Lütfen YouTube çerezlerini ayarlayın.');
-                }
-                if (error.message.includes('Cannot perform IP discovery')) {
-                    return await interaction.editReply('❌ Ses bağlantısı kurulamadı. Lütfen tekrar deneyin.');
-                }
-                return await interaction.editReply(`❌ Şarkı çalınırken bir hata oluştu: ${error.message}`);
-            }
+            return await interaction.editReply(`🎵 **${track.title}** şarkısı çalınıyor!`);
         } catch (error) {
             console.error('Play komutu hatası:', error);
-            return await interaction.editReply(`❌ Bir hata oluştu: ${error.message}`);
+            
+            // Interaction'ın hala geçerli olup olmadığını kontrol et
+            if (interaction.deferred || interaction.replied) {
+                try {
+                    if (error.message.includes('Sign in to confirm you\'re not a bot')) {
+                        return await interaction.editReply('❌ YouTube kimlik doğrulaması gerekiyor. Lütfen YouTube çerezlerini ayarlayın.');
+                    }
+                    if (error.message.includes('Cannot perform IP discovery')) {
+                        return await interaction.editReply('❌ Ses bağlantısı kurulamadı. Lütfen tekrar deneyin.');
+                    }
+                    return await interaction.editReply(`❌ Şarkı çalınırken bir hata oluştu: ${error.message}`);
+                } catch (replyError) {
+                    console.error('Hata mesajı gönderilemedi:', replyError);
+                }
+            } else {
+                try {
+                    await interaction.reply({ content: '❌ Bir hata oluştu!', ephemeral: true });
+                } catch (replyError) {
+                    console.error('Hata mesajı gönderilemedi:', replyError);
+                }
+            }
         }
     }
 };
