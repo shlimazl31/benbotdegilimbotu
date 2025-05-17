@@ -1,23 +1,25 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { useMainPlayer } from 'discord-player';
 import playdl from 'play-dl';
+import fs from 'fs';
 
-// Set up YouTube authentication
-const youtubeCookie = process.env.YOUTUBE_COOKIE;
-if (youtubeCookie) {
+// YouTube kimlik doğrulaması
+async function setupYouTubeAuth() {
     try {
-        playdl.setToken({
-            youtube: {
-                cookie: youtubeCookie
-            }
-        });
-        console.log('YouTube authentication configured successfully');
+        const cookiePath = './www.youtube.com_cookies.txt';
+        if (fs.existsSync(cookiePath)) {
+            await playdl.setCookie(cookiePath);
+            console.log('YouTube kimlik doğrulaması başarıyla yapılandırıldı');
+        } else {
+            console.warn('YouTube çerez dosyası bulunamadı!');
+        }
     } catch (error) {
-        console.error('Failed to configure YouTube authentication:', error);
+        console.error('YouTube kimlik doğrulaması yapılandırılırken hata:', error);
     }
-} else {
-    console.warn('YOUTUBE_COOKIE environment variable is not set');
 }
+
+// YouTube kimlik doğrulamasını başlat
+setupYouTubeAuth();
 
 export const command = {
     data: new SlashCommandBuilder()
@@ -47,7 +49,7 @@ export const command = {
 
             const player = useMainPlayer();
             
-            // Set up error handling for the player
+            // Player event listener'larını ayarla
             player.events.on('error', (queue, error) => {
                 console.error(`Player error: ${error.message}`);
                 queue.metadata.channel.send(`❌ Bir hata oluştu: ${error.message}`).catch(console.error);
@@ -58,7 +60,6 @@ export const command = {
                 queue.metadata.channel.send(`❌ Bir hata oluştu: ${error.message}`).catch(console.error);
             });
 
-            // Set up connection error handling
             player.events.on('connectionError', (queue, error) => {
                 console.error(`Connection error: ${error.message}`);
                 queue.metadata.channel.send(`❌ Bağlantı hatası: ${error.message}`).catch(console.error);
@@ -100,7 +101,6 @@ export const command = {
         } catch (error) {
             console.error('Play komutu hatası:', error);
             
-            // Interaction'ın hala geçerli olup olmadığını kontrol et
             if (interaction.deferred || interaction.replied) {
                 try {
                     if (error.message.includes('Sign in to confirm you\'re not a bot')) {
