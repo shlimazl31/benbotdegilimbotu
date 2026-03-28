@@ -73,7 +73,7 @@ Modern ve kullanıcı dostu bir Discord müzik botu. YouTube ve Spotify desteği
 ## 👥 İletişim
 
 GitHub: [@shlimazl31](https://github.com/shlimazl31)
-Web Sitesi: [Bana ulaşın](https://benbotdegilim.com)
+Web Sitesi: [Bana ulaşın](https://yakupsemihbulut.com)
 
 ## 📝 Lisans
 
